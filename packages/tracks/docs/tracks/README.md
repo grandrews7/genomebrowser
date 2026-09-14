@@ -13,10 +13,15 @@ Track backgrounds are transparent. The browser supplies the white background, al
 
 These files must be available to the browser and support byte-range requests.
 
+## BAM files
+
+- [BAM](bam.md) reads alignments and their BAI index directly. Use it for coverage, read pileups, and sashimi junction arcs computed from the reads themselves rather than from precomputed files.
+
 ## BigWig files
 
 - [BigWig](bigwig.md) reads one BigWig file. Use it for a quantitative signal with full or dense display.
 - [MethylC](methylc.md) reads up to eight BigWig files for plus- and minus-strand CpG, CHG, CHH, and depth channels.
+- [dynseq](dynseq.md) reads a per-base score BigWig with a reference 2bit. Use it when the identity of the scored base matters, such as conservation or model attribution signals.
 - [CAVE](cave.md) reads a package-selected pair of hg38 BigWig files for hmC and OXBS. Use it only for the built-in neurotransmitter and age combinations. It does not accept source URLs.
 
 For URL-backed files, see [Data source troubleshooting](../dataSources.md) when a source does not load. CAVE uses package-owned URLs and cannot be pointed at another host.

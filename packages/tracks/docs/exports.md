@@ -9,7 +9,9 @@ Each track subpath exports one module object:
 | Track       | Package entry | Module export      | Type value      |
 | ----------- | ------------- | ------------------ | --------------- |
 | Ruler       | `/ruler`      | `rulerModule`      | `"ruler"`       |
+| BAM         | `/bam`        | `bamModule`        | `"bam"`         |
 | BigBed      | `/bigbed`     | `bigBedModule`     | `"bigbed"`      |
+| dynseq      | `/dynseq`     | `dynseqModule`     | `"dynseq"`      |
 | BigWig      | `/bigwig`     | `bigWigModule`     | `"bigwig"`      |
 | BulkBed     | `/bulkbed`    | `bulkBedModule`    | `"bulkbed"`     |
 | CAVE        | `/cave`       | `caveModule`       | `"cave"`        |

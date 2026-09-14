@@ -27,6 +27,10 @@
       "types": "./dist/src/lib.d.ts",
       "import": "./dist/genomebrowser-tracks.es.js"
     },
+    "./bam": {
+      "types": "./dist/src/bam/index.d.ts",
+      "import": "./dist/bam.js"
+    },
     "./bigbed": {
       "types": "./dist/src/bigbed/index.d.ts",
       "import": "./dist/bigbed.js"
@@ -42,6 +46,10 @@
     "./cave": {
       "types": "./dist/src/cave/index.d.ts",
       "import": "./dist/cave.js"
+    },
+    "./dynseq": {
+      "types": "./dist/src/dynseq/index.d.ts",
+      "import": "./dist/dynseq.js"
     },
     "./ccre": {
       "types": "./dist/src/ccre/index.d.ts",

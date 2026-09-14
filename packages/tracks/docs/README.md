@@ -1,6 +1,6 @@
 # First-party track modules
 
-`@weng-lab/genomebrowser-tracks` contains eight track modules for the `@weng-lab/genomebrowser` runtime. Use a module when your data matches its source format and you want its built-in MUI settings.
+`@weng-lab/genomebrowser-tracks` contains ten track modules for the `@weng-lab/genomebrowser` runtime. Use a module when your data matches its source format and you want its built-in MUI settings.
 
 ## Get started
 
