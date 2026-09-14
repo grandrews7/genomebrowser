@@ -2,15 +2,20 @@ import { useInteraction, useTooltip, type TrackRendererProps } from "@weng-lab/g
 import type { ReactNode } from "react";
 import { packRows } from "../shared/layout";
 import { condenseSignalRecords } from "../shared/signal";
-import { computeCoverageRuns, computeJunctions, filterJunctions, sampleReads } from "./helpers";
-import type { BamConfig, BamData, BamInteractionTarget, BamJunction } from "./types";
+import {
+  computeCoverageRuns,
+  computeJunctions,
+  filterJunctions,
+  layoutJunctionArcs,
+  sampleReads,
+} from "./helpers";
+import type { BamConfig, BamData, BamInteractionTarget } from "./types";
 
 type Props = TrackRendererProps<BamConfig, BamData>;
 
 /** Fraction of the track the coverage band keeps when something sits below it. */
 const COVERAGE_SHARE = 0.4;
 const SECTION_GAP = 4;
-const ARC_APEX_INSET = 12;
 
 function ZoomNotice({
   width,
@@ -157,45 +162,35 @@ function Sashimi({
 }: Pick<Props, "data" | "region" | "width" | "height" | "config"> & { color: string }) {
   const interaction = useInteraction<BamInteractionTarget>();
   const tooltip = useTooltip<BamInteractionTarget, BamConfig>();
-  const bases = region.end - region.start;
-  const toX = (position: number) => ((position - region.start) / bases) * width;
 
   const junctions = filterJunctions(computeJunctions(data), config);
   if (junctions.length === 0) return null;
-
-  let peak = 1;
-  for (const junction of junctions) if (junction.count > peak) peak = junction.count;
-  const baseline = height - 2;
-
-  // Thickness scales with the log of the count so a 500-read junction does not
-  // render a 5-read one invisible.
-  const strokeFor = (count: number) => 0.75 + (Math.log1p(count) / Math.log1p(peak)) * 3.25;
+  const arcs = layoutJunctionArcs(junctions, { region, width, height });
 
   return (
     <>
-      {junctions.map((junction: BamJunction) => {
-        const left = toX(junction.start);
-        const right = toX(junction.end);
-        const middle = (left + right) / 2;
-        const target: BamInteractionTarget = { kind: "junction", junction };
+      {arcs.map((arc) => {
+        const target: BamInteractionTarget = { kind: "junction", junction: arc.junction };
         return (
           <g
-            key={`${junction.start}:${junction.end}`}
+            key={`${arc.junction.start}:${arc.junction.end}`}
             style={{ cursor: "pointer" }}
             onClick={() => interaction?.onClick?.(target)}
             onMouseEnter={(event) => tooltip.show(target, event)}
             onMouseLeave={tooltip.hide}
           >
             <path
-              d={`M ${left} ${baseline} Q ${middle} ${ARC_APEX_INSET} ${right} ${baseline}`}
+              d={`M ${arc.x1} ${height - 2} Q ${arc.midX} ${arc.controlY} ${arc.x2} ${height - 2}`}
               fill="none"
               stroke={color}
-              strokeWidth={strokeFor(junction.count)}
+              strokeWidth={arc.strokeWidth}
               opacity={0.85}
             />
-            <text x={middle} y={ARC_APEX_INSET - 2} textAnchor="middle" fontSize={10} fill={color}>
-              {junction.count}
-            </text>
+            {arc.showLabel && (
+              <text x={arc.midX} y={arc.peakY - 3} textAnchor="middle" fontSize={10} fill={color}>
+                {arc.junction.count}
+              </text>
+            )}
           </g>
         );
       })}

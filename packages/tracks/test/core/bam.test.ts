@@ -12,7 +12,7 @@ vi.mock("@weng-lab/genomic-reader", () => ({
 
 import { bamModule, computeCoverageRuns, computeJunctions } from "../../src/bam";
 import { fetchBam } from "../../src/bam/fetch";
-import { filterJunctions, sampleReads } from "../../src/bam/helpers";
+import { filterJunctions, layoutJunctionArcs, sampleReads } from "../../src/bam/helpers";
 import type { BamConfig, BamData } from "../../src/bam/types";
 
 type Cigar = { operation: "M" | "I" | "D" | "N" | "S" | "H" | "P" | "=" | "X"; length: number }[];
@@ -260,5 +260,84 @@ describe("BAM pileup sampling", () => {
     // The sample spans the whole window: a prefix of ten would stop at 90.
     expect(sampled[0]!.start).toBe(0);
     expect(sampled.at(-1)!.start).toBe(900);
+  });
+});
+
+describe("BAM junction arc layout", () => {
+  const options = { region: { start: 0, end: 1000 }, width: 1000, height: 100 };
+
+  it("places the label at the curve's own peak, not at the control point", () => {
+    const [arc] = layoutJunctionArcs([{ start: 100, end: 900, count: 5 }], options);
+    // A quadratic curve reaches half way to its control point, so the peak sits
+    // midway between the baseline and controlY.
+    const baseline = options.height - 2;
+    expect(arc!.peakY).toBeCloseTo((baseline + arc!.controlY) / 2, 5);
+    expect(arc!.peakY).toBeGreaterThan(arc!.controlY);
+  });
+
+  it("raises wider junctions above narrower ones", () => {
+    const arcs = layoutJunctionArcs(
+      [
+        { start: 100, end: 150, count: 5 },
+        { start: 100, end: 900, count: 5 },
+      ],
+      options,
+    );
+    const [narrow, wide] = arcs;
+    // Smaller y is higher on the screen.
+    expect(wide!.peakY).toBeLessThan(narrow!.peakY);
+  });
+
+  it("keeps every arc inside the track", () => {
+    const arcs = layoutJunctionArcs(
+      [
+        { start: 0, end: 1000, count: 900 },
+        { start: 400, end: 402, count: 1 },
+      ],
+      options,
+    );
+    for (const arc of arcs) {
+      expect(arc.peakY).toBeGreaterThanOrEqual(0);
+      expect(arc.peakY).toBeLessThanOrEqual(options.height);
+    }
+  });
+
+  it("drops labels that would collide, keeping the highest counts", () => {
+    // Five junctions sharing a midpoint and span: every label would land on the
+    // same spot, so only the largest count survives.
+    const stacked = [
+      { start: 500, end: 520, count: 3 },
+      { start: 499, end: 521, count: 40 },
+      { start: 501, end: 519, count: 7 },
+    ];
+    const arcs = layoutJunctionArcs(stacked, options);
+    const labelled = arcs.filter((arc) => arc.showLabel);
+    expect(labelled).toHaveLength(1);
+    expect(labelled[0]!.junction.count).toBe(40);
+    // Every arc is still drawn; only the numbers are thinned.
+    expect(arcs).toHaveLength(3);
+  });
+
+  it("labels junctions that are far enough apart", () => {
+    const arcs = layoutJunctionArcs(
+      [
+        { start: 10, end: 60, count: 5 },
+        { start: 800, end: 850, count: 5 },
+      ],
+      options,
+    );
+    expect(arcs.every((arc) => arc.showLabel)).toBe(true);
+  });
+
+  it("scales stroke width with the log of the count", () => {
+    const arcs = layoutJunctionArcs(
+      [
+        { start: 0, end: 500, count: 1 },
+        { start: 0, end: 500, count: 500 },
+      ],
+      options,
+    );
+    expect(arcs[0]!.strokeWidth).toBeLessThan(arcs[1]!.strokeWidth);
+    expect(arcs[1]!.strokeWidth).toBeCloseTo(4, 1);
   });
 });

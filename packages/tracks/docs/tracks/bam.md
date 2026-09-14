@@ -61,6 +61,11 @@ also carry no annotated-versus-novel flag, no unique-versus-multi split, and no 
 those come from a splice-aware aligner's own output, not from the alignments alone. Use a
 precomputed junction file through the [BigBed](bigbed.md) track when you need those.
 
+Arc height scales with span, so a long-range junction rises above a short one. A dense view holds
+more junctions than legible numbers, so counts are labelled highest-first and any label that would
+overlap one already placed is omitted. The arc is still drawn, and its tooltip still reports the
+count.
+
 `maxJunctionSpan` is the useful filter at paralogous loci, where multi-mapped reads produce
 long-range junctions that render as flat streaks across the view.
 
