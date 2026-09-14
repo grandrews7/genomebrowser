@@ -20,8 +20,6 @@
     "@weng-lab/genomebrowser": "workspace:*",
     "@weng-lab/genomebrowser-tracks": "workspace:*",
     "@weng-lab/genomic-reader": "workspace:*",
-    "buffer": "^6.0.3",
-    "genomic-reader": "1.4.10",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zod": "4.4.3"

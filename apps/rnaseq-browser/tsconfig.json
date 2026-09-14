@@ -17,7 +17,9 @@
     "paths": {
       "@weng-lab/genomebrowser": ["../../packages/core/src/lib.ts"],
       "@weng-lab/genomebrowser-tracks": ["../../packages/tracks/src/lib.ts"],
+      "@weng-lab/genomebrowser-tracks/bam": ["../../packages/tracks/src/bam/index.ts"],
       "@weng-lab/genomebrowser-tracks/bigwig": ["../../packages/tracks/src/bigwig/index.ts"],
+      "@weng-lab/genomebrowser-tracks/dynseq": ["../../packages/tracks/src/dynseq/index.ts"],
       "@weng-lab/genomebrowser-tracks/gene": ["../../packages/tracks/src/gene/index.ts"],
       "@weng-lab/genomebrowser-tracks/shared": ["../../packages/tracks/src/shared/index.ts"],
       "@weng-lab/genomic-reader": ["../../packages/reader/src/lib.ts"]

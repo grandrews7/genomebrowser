@@ -6,7 +6,9 @@ import {
   type AnyTrackInstance,
   type GenomicRegion,
 } from "@weng-lab/genomebrowser";
+import { bamModule } from "@weng-lab/genomebrowser-tracks/bam";
 import { bigWigModule } from "@weng-lab/genomebrowser-tracks/bigwig";
+import { dynseqModule } from "@weng-lab/genomebrowser-tracks/dynseq";
 import {
   geneModule,
   getGeneDatasetTitle,
@@ -29,8 +31,6 @@ import {
   SIGNAL_TRACKS,
   TWO_BIT_URL,
 } from "./config";
-import { bamModule } from "./tracks/bamModule";
-import { dynseqModule } from "./tracks/dynseqModule";
 
 const MARGIN_WIDTH = 150;
 
@@ -98,16 +98,17 @@ const bamTracks: AnyTrackInstance[] = BAM_TRACKS.map((track) =>
     base: {
       id: track.id,
       title: track.title,
-      display: "full",
+      display: track.display ?? "coverage",
       height: track.height ?? 180,
     },
     config: {
-      bamUrl: track.bamUrl,
-      ...(track.baiUrl ? { baiUrl: track.baiUrl } : {}),
-      ...(track.display ? { display: track.display } : {}),
-      ...(track.coverageMaxBases ? { coverageMaxBases: track.coverageMaxBases } : {}),
+      url: track.url,
+      ...(track.indexUrl ? { indexUrl: track.indexUrl } : {}),
       ...(track.maxBases ? { maxBases: track.maxBases } : {}),
-      ...(track.sashimiMaxBases ? { sashimiMaxBases: track.sashimiMaxBases } : {}),
+      ...(track.minMappingQuality !== undefined
+        ? { minMappingQuality: track.minMappingQuality }
+        : {}),
+      ...(track.maxJunctionSpan ? { maxJunctionSpan: track.maxJunctionSpan } : {}),
     },
   }),
 );
@@ -121,7 +122,7 @@ const dynseqTracks: AnyTrackInstance[] = DYNSEQ_TRACKS.map((track) =>
       height: track.height ?? 110,
     },
     config: {
-      bigwigUrl: track.bigwigUrl,
+      url: track.url,
       twoBitUrl: track.twoBitUrl ?? TWO_BIT_URL,
     },
   }),

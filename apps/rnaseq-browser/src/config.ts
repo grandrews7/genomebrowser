@@ -77,30 +77,29 @@ export const SIGNAL_TRACKS: SignalTrack[] = [
 export type BamTrack = {
   id: string;
   title: string;
-  /** The index is assumed to be <bamUrl>.bai unless baiUrl is given. */
-  bamUrl: string;
-  baiUrl?: string;
+  url: string;
+  /** The index is assumed to be <url>.bai unless this is given. */
+  indexUrl?: string;
   height?: number;
   /**
-   * "coverage" | "pileup" | "both" | "sashimi". Coverage is always drawn;
-   * reads and junction arcs appear below it once you zoom past their own
-   * (tighter) thresholds.
+   * "coverage" draws depth alone; "pileup" adds stacked reads below it;
+   * "sashimi" adds splice-junction arcs below it.
    */
-  display?: "coverage" | "pileup" | "both" | "sashimi";
+  display?: "coverage" | "pileup" | "sashimi";
   /**
-   * Zoom gates in bp. Everything is computed from the alignments in view, so
-   * these bound how many reads the tab has to hold at once. Raise them only if
-   * your BAMs aren't deeply covered.
+   * Widest window, in bases, that will be fetched. Coverage, reads, and arcs
+   * all come from holding every alignment in the window, so this bounds memory
+   * rather than what is drawn.
    *
-   * They measure the RENDER window, which the browser overscans to 3x the
+   * It measures the RENDER window, which the browser overscans to 3x the
    * visible span so panning stays smooth. A 100,000 gate therefore starts
-   * drawing at a visible width of about 33,000 bp. The gate bounds the read
-   * volume, and the overscan is part of that volume, so it is deliberately the
-   * larger span that is measured.
+   * drawing at a visible width of about 33,000 bp.
    */
-  coverageMaxBases?: number;
   maxBases?: number;
-  sashimiMaxBases?: number;
+  /** Drops alignments below this MAPQ. 0, the default, keeps multi-mappers. */
+  minMappingQuality?: number;
+  /** Hides junctions wider than this; useful at paralogous loci. */
+  maxJunctionSpan?: number;
 };
 
 /**
@@ -111,12 +110,12 @@ export const BAM_TRACKS: BamTrack[] = [
   {
     id: "hepg2-rna-bam",
     title: "HepG2 RNA-seq (ENCFF660EXG)",
-    bamUrl: `${BASE}/ENCFF660EXG.bam`,
+    url: `${BASE}/ENCFF660EXG.bam`,
     height: 180,
     display: "sashimi",
-    coverageMaxBases: 100000,
-    maxBases: 20000,
-    sashimiMaxBases: 100000,
+    maxBases: 100000,
+    minMappingQuality: 1,
+    maxJunctionSpan: 30000,
   },
 ];
 
@@ -124,7 +123,7 @@ export type DynseqTrack = {
   id: string;
   title: string;
   /** Per-base scores: phyloP, model contribution/importance, ... */
-  bigwigUrl: string;
+  url: string;
   /** Genome sequence, used for the nucleotide letters when zoomed in. */
   twoBitUrl?: string;
   height?: number;
@@ -141,13 +140,13 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
   {
     id: "dynseq-chrombpnet",
     title: "ChromBPNet contribution (ENCFF829DSC)",
-    bigwigUrl: `${BASE}/ENCFF829DSC.bigWig`,
+    url: `${BASE}/ENCFF829DSC.bigWig`,
     height: 110,
   },
   {
     id: "dynseq-phylop",
     title: "Zoonomia phyloP (QC)",
-    bigwigUrl: "https://users.wenglab.org/andrewsg/241-mammalian-2020v2.bigWig",
+    url: "https://users.wenglab.org/andrewsg/241-mammalian-2020v2.bigWig",
     height: 100,
   },
 ];

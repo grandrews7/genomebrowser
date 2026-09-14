@@ -14,6 +14,14 @@ const source = (path: string) => fileURLToPath(new URL(path, import.meta.url));
  */
 const workspaceAliases = [
   {
+    find: "@weng-lab/genomebrowser-tracks/bam",
+    replacement: source("../../packages/tracks/src/bam/index.ts"),
+  },
+  {
+    find: "@weng-lab/genomebrowser-tracks/dynseq",
+    replacement: source("../../packages/tracks/src/dynseq/index.ts"),
+  },
+  {
     find: "@weng-lab/genomebrowser-tracks/bigwig",
     replacement: source("../../packages/tracks/src/bigwig/index.ts"),
   },
@@ -42,25 +50,11 @@ const workspaceAliases = [
 export default defineConfig({
   plugins: [react()],
 
-  /**
-   * The legacy `genomic-reader` (BAM only - see src/tracks/bamModule.tsx) was
-   * written for Node: its AxiosDataLoader checks `response.data instanceof
-   * Buffer`, and its axios 0.21 build reads `global`. Browsers have neither, so
-   * without these the first BAM read throws "Right hand side of 'instanceof' is
-   * not an object". `src/polyfills.ts` supplies the `Buffer` global itself;
-   * pre-bundling it here keeps that import out of the dev-server waterfall.
-   */
-  define: {
-    global: "globalThis",
-  },
   resolve: {
     alias: workspaceAliases,
     // The aliased package sources resolve React from their own node_modules.
     // Without deduping, hooks called inside a track module would run against a
     // second React copy and throw "Invalid hook call".
     dedupe: ["react", "react-dom", "@emotion/react", "@emotion/styled", "@mui/material"],
-  },
-  optimizeDeps: {
-    include: ["buffer"],
   },
 });
