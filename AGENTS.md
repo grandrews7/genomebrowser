@@ -12,6 +12,7 @@ All packages in this monorepo are in beta. Making changes to the public API that
 - `packages/reader` (`@weng-lab/genomic-reader`) - a library for reading genomic data from files.
 - `apps/standalone` (`@weng-lab/genomebrowser-standalone`) - the deployed standalone web app.
 - `apps/playground` (`@weng-lab/genomebrowser-playground`) - experiments and custom browser setups.
+- `apps/rnaseq-browser` (`@weng-lab/rnaseq-browser`) - an RNA-seq browser with app-local BAM and dynseq track modules. The only Vite app; the only consumer of the legacy unscoped `genomic-reader` (BAM reading, which `@weng-lab/genomic-reader` does not do).
 
 ## Documentation
 
