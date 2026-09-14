@@ -1,5 +1,15 @@
 export { BigBedParseError } from "./bigBedParseError";
 export type { BigBedParseContext } from "./bigBedParseError";
+export { createBamFile } from "./bam";
+export type {
+  BamCigarOperation,
+  BamCigarSegment,
+  BamFile,
+  BamFileOptions,
+  BamHeader,
+  BamRecord,
+  BamReference,
+} from "./bam";
 export { bed3Schema, createBigBedFile } from "./bigBed";
 export type { BigBedFileOptions, BigBedRecord } from "./bigBed";
 export { createBigWigFile } from "./bigWig";

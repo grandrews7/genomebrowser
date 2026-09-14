@@ -59,6 +59,7 @@ assertJsonEqual(
   [
     "BigBedParseError",
     "bed3Schema",
+    "createBamFile",
     "createBigBedFile",
     "createBigWigFile",
     "createTwoBitFile",
@@ -72,6 +73,13 @@ assertJsonEqual(
 assertJsonEqual(
   declarationExports.typeNames,
   [
+    "BamCigarOperation",
+    "BamCigarSegment",
+    "BamFile",
+    "BamFileOptions",
+    "BamHeader",
+    "BamRecord",
+    "BamReference",
     "BigBedFileOptions",
     "BigBedParseContext",
     "BigBedRecord",
@@ -97,6 +105,7 @@ assertJsonEqual(
 assertJsonEqual(
   declarationExports.moduleSpecifiers,
   [
+    "./bam",
     "./bigBed",
     "./bigBedParseError",
     "./bigWig",
@@ -181,6 +190,7 @@ assertJsonEqual(
   [
     "BigBedParseError",
     "bed3Schema",
+    "createBamFile",
     "createBigBedFile",
     "createBigWigFile",
     "createTwoBitFile",

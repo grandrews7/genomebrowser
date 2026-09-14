@@ -192,6 +192,14 @@ never returns partial results for these failures.
 - `createBigBedFile({ url, schema })`: synchronously configures a BigBed file. It performs no network
   request until `read()` and privately caches successful file-header, chromosome, and primary-index
   header metadata for that file object.
+- `createBamFile({ url, indexUrl })`: synchronously configures a BAM file and its BAI index. Its
+  `read()` method returns the alignments overlapping a region and its `getHeader()` method returns
+  the SAM header text and reference list. Header and index metadata are cached per file object.
+- `BamFileOptions` and `BamFile`: BAM factory and file contracts.
+- `BamRecord`: an alignment with its interval, query name, raw SAM `flag`, mapping quality, strand,
+  CIGAR segments, and sequence.
+- `BamCigarOperation` and `BamCigarSegment`: the SAM operation codes and one run of them.
+- `BamHeader` and `BamReference`: the parsed SAM header text and its reference names and lengths.
 - `BigBedParseError`: a Zod-compatible column validation error with record and column `context`; see [BigBed failures](docs/bigbed.md#lifecycle-and-failures).
 - `bed3Schema`: a Zod object schema that consumes zero post-BED3 fields.
 - `BigBedFileOptions<Schema>`: factory options for the public HTTP(S) URL and positional Zod schema.
@@ -207,3 +215,8 @@ exported.
 ## Reference DNA
 
 Use `createTwoBitFile({ url })` for range-based reference sequence reads, including unknown and soft-masked bases. See [2bit reference sequence](docs/twobit.md).
+
+## Sequence alignments
+
+Use `createBamFile({ url })` for range-based BAM reads over a BAI index, including spliced
+alignments and per-record CIGAR and sequence. See [BAM alignments](docs/bam.md).
