@@ -4,8 +4,18 @@ A Vite single-page app for looking at RNA-seq over a locus: bigWig coverage,
 GENCODE annotation, and two track modules that live in this app rather than in
 `packages/tracks`.
 
-Edit [`src/config.ts`](src/config.ts) to point it at your own files. Everything
-else is wiring.
+Each dataset lives in [`src/datasets`](src/datasets) and owns its assembly,
+starting region, gene-track settings, and track lists. [`src/config.ts`](src/config.ts)
+names the active one, so switching between datasets is a single line:
+
+```ts
+export * from "./datasets/hepg2";
+```
+
+To add one, copy `datasets/hepg2.ts`, point it at your files, and name it in
+`config.ts`. `Dataset` in [`datasets/types.ts`](src/datasets/types.ts) is the
+contract each file satisfies, so a missing member is a compile error rather than
+an empty track. Everything else is wiring.
 
 ## App-local track modules
 
