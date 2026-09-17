@@ -79,6 +79,14 @@ export type Dataset = {
   SHOW_GENE_TRACK: boolean;
   GENCODE_RELEASE: string;
   GENE_TRACK_VARIANT: "basic" | "comprehensive";
+  /**
+   * A BigGenePred BigBed to use instead of the packaged GENCODE catalog. Needed
+   * for any assembly the catalog does not cover, which is everything except
+   * hg38 and mm10. When set, GENCODE_RELEASE and GENE_TRACK_VARIANT are ignored.
+   */
+  GENE_TRACK_URL: string | undefined;
+  /** Title for a custom annotation track. The catalog supplies its own. */
+  GENE_TRACK_TITLE: string | undefined;
   GENE_TRACK_DISPLAY: "full" | "merged" | "tagged";
   GENE_TRACK_HEIGHT: number;
   HIGHLIGHT_GENE: string | undefined;

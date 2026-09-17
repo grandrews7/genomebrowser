@@ -12,6 +12,12 @@ names the active one, so switching between datasets is a single line:
 export * from "./datasets/hepg2";
 ```
 
+`datasets/arabidopsis.ts` is the non-human example: TAIR10, its own annotation
+built from an Ensembl GTF, and files served from `public/`. `public/` is
+gitignored apart from its own `.gitignore`, so drop local data there without it
+reaching the repository. The committed default is `hepg2`, whose files are
+hosted, so a fresh clone renders without any local data.
+
 To add one, copy `datasets/hepg2.ts`, point it at your files, and name it in
 `config.ts`. `Dataset` in [`datasets/types.ts`](src/datasets/types.ts) is the
 contract each file satisfies, so a missing member is a compile error rather than

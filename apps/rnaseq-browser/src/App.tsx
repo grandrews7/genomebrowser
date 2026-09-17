@@ -23,6 +23,8 @@ import {
   GENE_TAG_COLORS,
   GENE_TRACK_DISPLAY,
   GENE_TRACK_HEIGHT,
+  GENE_TRACK_TITLE,
+  GENE_TRACK_URL,
   GENE_TRACK_VARIANT,
   HIGHLIGHT_COLOR,
   HIGHLIGHT_GENE,
@@ -35,6 +37,15 @@ import {
 const MARGIN_WIDTH = 150;
 
 /**
+ * Dataset URLs may be page-relative, so a file in ./public can be named
+ * "/reads.bam" and served by the dev server without cross-origin configuration.
+ * The reader deliberately requires absolute URLs - it refuses a bare string
+ * rather than quietly turning a typo into a same-origin request - so resolve
+ * against the page here, where the relative form is a documented convention.
+ */
+const resolveUrl = (url: string) => new URL(url, window.location.href).href;
+
+/**
  * Stores are Zustand hooks and MUST be created once, outside of render.
  * Recreating them resets the region, the tracks, and all in-flight requests.
  */
@@ -45,29 +56,42 @@ const useBrowserStore = createBrowserStore({
   trackWidth: 900,
 });
 
-const geneDataset = getGeneDatasetsForAssembly(ASSEMBLY.id).find(
-  (dataset) => dataset.release === GENCODE_RELEASE && dataset.variant === GENE_TRACK_VARIANT,
-);
-if (SHOW_GENE_TRACK && !geneDataset) {
+/**
+ * A dataset either names its own annotation file or picks one from the packaged
+ * catalog. The catalog only covers hg38 and mm10, so any other assembly has to
+ * supply GENE_TRACK_URL - see tools/gtf-to-big-gene-pred-plus for building one.
+ */
+const catalogDataset = GENE_TRACK_URL
+  ? undefined
+  : getGeneDatasetsForAssembly(ASSEMBLY.id).find(
+      (dataset) => dataset.release === GENCODE_RELEASE && dataset.variant === GENE_TRACK_VARIANT,
+    );
+const geneTrackUrl = GENE_TRACK_URL ?? catalogDataset?.url;
+
+if (SHOW_GENE_TRACK && !geneTrackUrl) {
+  const available = getGeneDatasetsForAssembly(ASSEMBLY.id).map(getGeneDatasetTitle);
   throw new Error(
-    `No GENCODE ${GENCODE_RELEASE} ${GENE_TRACK_VARIANT} dataset for ${ASSEMBLY.id}. ` +
-      `Available: ${getGeneDatasetsForAssembly(ASSEMBLY.id).map(getGeneDatasetTitle).join(", ")}.`,
+    `No annotation for ${ASSEMBLY.id}. Set GENE_TRACK_URL in the dataset, or pick one of: ` +
+      `${available.length > 0 ? available.join(", ") : "nothing in the catalog for this assembly"}.`,
   );
 }
 
 const geneTracks: AnyTrackInstance[] =
-  SHOW_GENE_TRACK && geneDataset
+  SHOW_GENE_TRACK && geneTrackUrl
     ? [
         geneModule.create({
           base: {
             id: "genes",
-            title: getGeneDatasetTitle(geneDataset),
+            title:
+              GENE_TRACK_TITLE ?? (catalogDataset ? getGeneDatasetTitle(catalogDataset) : "Genes"),
             display: GENE_TRACK_DISPLAY,
             height: GENE_TRACK_HEIGHT,
           },
-          source: "host",
+          // A catalog file is ours to keep fixed; one the dataset named is the
+          // user's, so its URL stays editable in the track settings.
+          source: catalogDataset ? "host" : "user",
           config: {
-            url: geneDataset.url,
+            url: resolveUrl(geneTrackUrl),
             tagColors: GENE_TAG_COLORS,
             highlightColor: HIGHLIGHT_COLOR,
             ...(HIGHLIGHT_GENE ? { geneName: HIGHLIGHT_GENE } : {}),
@@ -86,7 +110,7 @@ const signalTracks: AnyTrackInstance[] = SIGNAL_TRACKS.map((track) =>
       color: track.color ?? "#2266aa",
     },
     config: {
-      url: track.url,
+      url: resolveUrl(track.url),
       fillWithZero: true,
       ...(track.yRange ? { yRange: track.yRange } : {}),
     },
@@ -102,8 +126,8 @@ const bamTracks: AnyTrackInstance[] = BAM_TRACKS.map((track) =>
       height: track.height ?? 180,
     },
     config: {
-      url: track.url,
-      ...(track.indexUrl ? { indexUrl: track.indexUrl } : {}),
+      url: resolveUrl(track.url),
+      ...(track.indexUrl ? { indexUrl: resolveUrl(track.indexUrl) } : {}),
       ...(track.maxBases ? { maxBases: track.maxBases } : {}),
       ...(track.minMappingQuality !== undefined
         ? { minMappingQuality: track.minMappingQuality }
@@ -122,8 +146,8 @@ const dynseqTracks: AnyTrackInstance[] = DYNSEQ_TRACKS.map((track) =>
       height: track.height ?? 110,
     },
     config: {
-      url: track.url,
-      twoBitUrl: track.twoBitUrl ?? TWO_BIT_URL,
+      url: resolveUrl(track.url),
+      twoBitUrl: resolveUrl(track.twoBitUrl ?? TWO_BIT_URL),
     },
   }),
 );

@@ -28,6 +28,10 @@ export const GENE_TRACK_VARIANT: "basic" | "comprehensive" = "comprehensive";
  * comprehensive set. "merged" collapses them onto one row - compact, but hides
  * isoform structure. "tagged" colors by the tags listed in GENE_TAG_COLORS.
  */
+/** Undefined means "use the packaged GENCODE catalog". */
+export const GENE_TRACK_URL: string | undefined = undefined;
+export const GENE_TRACK_TITLE: string | undefined = undefined;
+
 export const GENE_TRACK_DISPLAY: "full" | "merged" | "tagged" = "full";
 export const GENE_TRACK_HEIGHT = 220;
 
@@ -98,6 +102,8 @@ const dataset = {
   SHOW_GENE_TRACK,
   GENCODE_RELEASE,
   GENE_TRACK_VARIANT,
+  GENE_TRACK_URL,
+  GENE_TRACK_TITLE,
   GENE_TRACK_DISPLAY,
   GENE_TRACK_HEIGHT,
   HIGHLIGHT_GENE,
