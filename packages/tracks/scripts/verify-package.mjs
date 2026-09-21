@@ -21,11 +21,11 @@ const expectedRuntimeExports = new Map([
   ["./ruler", ["rulerModule"]],
   ["./bam", ["bamModule", "computeCoverageRuns", "computeJunctions"]],
   ["./bigbed", ["bigBedModule", "fetchBigBedRows"]],
+  ["./dynseq", ["dynseqModule", "NUCLEOTIDE_COLORS", "NUCLEOTIDE_GLYPHS"]],
   ["./bigwig", ["bigWigModule"]],
   ["./bulkbed", ["bulkBedModule"]],
   ["./cave", ["caveModule"]],
-  ["./dynseq", ["dynseqModule", "NUCLEOTIDE_COLORS", "NUCLEOTIDE_GLYPHS"]],
-  ["./ccre", ["ccreBigBedModule", "ccreBigBedSchema"]],
+  ["./ccre", ["ccreBigBedModule"]],
   ["./gene", ["geneModule", "getGeneDatasetsForAssembly", "getGeneDatasetTitle"]],
   ["./methylc", ["methylCModule"]],
   [

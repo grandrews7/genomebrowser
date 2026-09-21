@@ -1,9 +1,10 @@
 import {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
+  type RefObject,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import type { GenomicRegion } from "../../genome/region";
@@ -17,7 +18,22 @@ import type {
 
 import { createHighlightId } from "./createHighlightId";
 
-type Selection = { start: number; end: number; mode: "zoom" | "highlight"; pointerId: number };
+type SelectionContext = {
+  region: GenomicRegion;
+  svg: SVGSVGElement | null;
+  marginWidth: number;
+  trackWidth: number;
+  totalHeight: number;
+  highlightStyle: SelectionHighlightStyle;
+};
+type Selection = {
+  start: number;
+  end: number;
+  mode: "zoom" | "highlight";
+  pointerId: number;
+  context: SelectionContext;
+  requestedModeFrom?: BrowserSelectionMode;
+};
 const DEFAULT_HIGHLIGHT: SelectionHighlightStyle = {
   color: "#f59e0b",
   opacity: 0.25,
@@ -33,6 +49,7 @@ export function SelectRegion({
   setRegion,
   disabled = false,
   mode = "zoom",
+  onModeChange,
   highlightStyle = DEFAULT_HIGHLIGHT,
   onHighlight,
   highlights = [],
@@ -46,6 +63,7 @@ export function SelectRegion({
   setRegion: (region: GenomicRegion) => BrowserRegionMutationResult;
   disabled?: boolean;
   mode?: BrowserSelectionMode;
+  onModeChange?: (mode: BrowserSelectionMode) => void;
   highlightStyle?: SelectionHighlightStyle;
   onHighlight?: (highlight: Highlight) => void;
   highlights?: readonly Highlight[];
@@ -59,22 +77,45 @@ export function SelectRegion({
   const hasValidDimensions = [marginWidth, trackWidth, totalHeight].every(
     (value) => Number.isFinite(value) && value > 0,
   );
-  const cancel = useCallback(() => {
+  const context: SelectionContext = {
+    region,
+    svg,
+    marginWidth,
+    trackWidth,
+    totalHeight,
+    highlightStyle,
+  };
+  const visibleSelection =
+    selection && isSelectionCurrent(selection, context, mode, disabled) ? selection : null;
+  // Discard obsolete state during render so it cannot return if props change back.
+  if (selection && !visibleSelection) setSelection(null);
+  else if (selection?.requestedModeFrom && selection.mode === mode) {
+    // A ruler drag requests Zoom while its parent still renders Pan.
+    setSelection({ ...selection, requestedModeFrom: undefined });
+  }
+
+  const detach = useCallback(() => {
     cleanup.current?.();
     cleanup.current = null;
     session.current = null;
-    setSelection(null);
   }, []);
+  const cancel = useCallback(() => {
+    detach();
+    setSelection(null);
+  }, [detach]);
 
-  useEffect(
-    () => cancel,
-    [cancel, disabled, mode, highlightStyle, marginWidth, trackWidth, totalHeight, region, svg],
-  );
+  // Native listeners must be gone before a changed context can receive input.
+  useLayoutEffect(() => {
+    if (session.current && !isSelectionCurrent(session.current, context, mode, disabled)) detach();
+    else if (session.current?.requestedModeFrom && session.current.mode === mode)
+      session.current = { ...session.current, requestedModeFrom: undefined };
+  });
+  useLayoutEffect(() => detach, [detach]);
 
-  const startSelection = (event: ReactPointerEvent<SVGGElement>) => {
+  const startSelection = (event: ReactPointerEvent<SVGGElement>, selectionMode = mode) => {
     if (disabled || !hasValidDimensions || !svg || event.button !== 0 || event.isPrimary === false)
       return;
-    if (mode === "pan") return;
+    if (selectionMode === "pan") return;
     const point = svgPoint(svg, event.clientX, event.clientY);
     if (
       !point ||
@@ -87,24 +128,17 @@ export function SelectRegion({
     event.stopPropagation();
     cancel();
     const start = point.x;
-    session.current = { start, end: start, mode, pointerId: event.pointerId };
-    setSelection(session.current);
-    const move = (event: PointerEvent) => {
-      if (!session.current || session.current.pointerId !== event.pointerId) return;
-      const point = svgPoint(svg, event.clientX, event.clientY);
-      if (!point || !Number.isFinite(point.x)) return;
-      session.current = {
-        ...session.current,
-        end: Math.max(marginWidth, Math.min(marginWidth + trackWidth, point.x)),
-      };
-      setSelection(session.current);
+    if (selectionMode !== mode) onModeChange?.(selectionMode);
+    session.current = {
+      start,
+      end: start,
+      mode: selectionMode,
+      pointerId: event.pointerId,
+      context,
+      requestedModeFrom: selectionMode !== mode ? mode : undefined,
     };
-    const up = (event: PointerEvent) => {
-      if (session.current?.pointerId !== event.pointerId) return;
-      move(event);
-      const current = session.current;
-      cancel();
-      if (!current || Math.abs(current.end - current.start) < 4) return;
+    setSelection(session.current);
+    cleanup.current = listenForSelection(session, setSelection, cancel, (current) => {
       const selectedRegion = getSelectedRegion(current, region, marginWidth, trackWidth);
       if (current.mode === "zoom") setRegion(selectedRegion);
       else
@@ -113,33 +147,17 @@ export function SelectRegion({
           id: createHighlightId(selectedRegion, highlights),
           region: selectedRegion,
         });
-    };
-    const pointerCancel = (event: PointerEvent) => {
-      if (session.current?.pointerId === event.pointerId) cancel();
-    };
-    const keyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") cancel();
-    };
-    document.addEventListener("pointermove", move);
-    document.addEventListener("pointerup", up);
-    document.addEventListener("pointercancel", pointerCancel);
-    document.addEventListener("keydown", keyDown);
-    window.addEventListener("blur", cancel);
-    cleanup.current = () => {
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerup", up);
-      document.removeEventListener("pointercancel", pointerCancel);
-      document.removeEventListener("keydown", keyDown);
-      window.removeEventListener("blur", cancel);
-    };
+    });
   };
 
-  const selectedRegion = selection
-    ? getSelectedRegion(selection, region, marginWidth, trackWidth)
-    : null;
-
   return (
-    <g>
+    <g
+      onPointerDownCapture={(event) => {
+        if (mode !== "pan" || !onModeChange || !(event.target instanceof Element)) return;
+        const target = event.target.closest('[data-genomebrowser-selection-mode="zoom"]');
+        if (target && event.currentTarget.contains(target)) startSelection(event, "zoom");
+      }}
+    >
       <rect
         fill="transparent"
         pointerEvents="all"
@@ -158,7 +176,7 @@ export function SelectRegion({
             fill="transparent"
             pointerEvents="all"
             style={{ cursor: "crosshair", touchAction: "none", userSelect: "none" }}
-            onPointerDown={startSelection}
+            onPointerDown={(event) => startSelection(event)}
             onPointerMove={(event) => {
               if (!svg || !guide.current) return;
               const point = svgPoint(svg, event.clientX, event.clientY);
@@ -192,35 +210,100 @@ export function SelectRegion({
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
             pointerEvents="none"
-            style={{ visibility: "hidden" }}
+            style={{ visibility: "hidden", display: selection ? "none" : undefined }}
           />
         </g>
       )}
-      {selection && (
-        <g pointerEvents="none">
-          <rect
-            data-region-selection=""
-            fill={selection.mode === "highlight" ? highlightStyle.color : "#2563eb"}
-            fillOpacity={0.18}
-            stroke={selection.mode === "highlight" ? highlightStyle.color : "#2563eb"}
-            strokeDasharray="4 3"
-            x={Math.min(selection.start, selection.end)}
-            y={0}
-            width={Math.abs(selection.end - selection.start)}
-            height={totalHeight}
-          />
-          <text
-            x={Math.min(selection.start, selection.end) + 6}
-            y={16}
-            fontSize={12}
-            fill="#172554"
-          >
-            {selection.mode === "zoom" ? "Zoom" : "Highlight"} ·{" "}
-            {selectedRegion ? (selectedRegion.end - selectedRegion.start).toLocaleString() : 0} bp
-          </text>
-        </g>
-      )}
+      {visibleSelection && <SelectionPreview selection={visibleSelection} />}
     </g>
+  );
+}
+
+function SelectionPreview({ selection }: { selection: Selection }) {
+  const { region, marginWidth, trackWidth, totalHeight, highlightStyle } = selection.context;
+  const selectedRegion = getSelectedRegion(selection, region, marginWidth, trackWidth);
+  return (
+    <g pointerEvents="none">
+      <rect
+        data-region-selection=""
+        fill={selection.mode === "highlight" ? highlightStyle.color : "#2563eb"}
+        fillOpacity={0.18}
+        stroke={selection.mode === "highlight" ? highlightStyle.color : "#2563eb"}
+        strokeDasharray="4 3"
+        x={Math.min(selection.start, selection.end)}
+        y={0}
+        width={Math.abs(selection.end - selection.start)}
+        height={totalHeight}
+      />
+      <text x={Math.min(selection.start, selection.end) + 6} y={16} fontSize={12} fill="#172554">
+        {selection.mode === "zoom" ? "Zoom" : "Highlight"} ·{" "}
+        {(selectedRegion.end - selectedRegion.start).toLocaleString()} bp
+      </text>
+    </g>
+  );
+}
+
+function listenForSelection(
+  session: RefObject<Selection | null>,
+  onChange: (selection: Selection) => void,
+  cancel: () => void,
+  onComplete: (selection: Selection) => void,
+) {
+  const move = (event: PointerEvent) => {
+    const current = session.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    const { svg, marginWidth, trackWidth } = current.context;
+    if (!svg) return;
+    const point = svgPoint(svg, event.clientX, event.clientY);
+    if (!point || !Number.isFinite(point.x)) return;
+    session.current = {
+      ...current,
+      end: Math.max(marginWidth, Math.min(marginWidth + trackWidth, point.x)),
+    };
+    onChange(session.current);
+  };
+  const up = (event: PointerEvent) => {
+    if (session.current?.pointerId !== event.pointerId) return;
+    move(event);
+    const current = session.current;
+    cancel();
+    if (current && Math.abs(current.end - current.start) >= 4) onComplete(current);
+  };
+  const pointerCancel = (event: PointerEvent) => {
+    if (session.current?.pointerId === event.pointerId) cancel();
+  };
+  const keyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") cancel();
+  };
+  document.addEventListener("pointermove", move);
+  document.addEventListener("pointerup", up);
+  document.addEventListener("pointercancel", pointerCancel);
+  document.addEventListener("keydown", keyDown);
+  window.addEventListener("blur", cancel);
+  return () => {
+    document.removeEventListener("pointermove", move);
+    document.removeEventListener("pointerup", up);
+    document.removeEventListener("pointercancel", pointerCancel);
+    document.removeEventListener("keydown", keyDown);
+    window.removeEventListener("blur", cancel);
+  };
+}
+
+function isSelectionCurrent(
+  selection: Selection,
+  context: SelectionContext,
+  mode: BrowserSelectionMode,
+  disabled: boolean,
+) {
+  return (
+    !disabled &&
+    (selection.mode === mode || selection.requestedModeFrom === mode) &&
+    selection.context.region === context.region &&
+    selection.context.svg === context.svg &&
+    selection.context.marginWidth === context.marginWidth &&
+    selection.context.trackWidth === context.trackWidth &&
+    selection.context.totalHeight === context.totalHeight &&
+    selection.context.highlightStyle === context.highlightStyle
   );
 }
 

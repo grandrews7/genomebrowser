@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { act } from "react";
+import { act, useLayoutEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SelectRegion } from "../../src/browser/viewport/SelectRegion";
@@ -21,6 +21,7 @@ type SelectionTestProps = Pick<Parameters<typeof SelectRegion>[0], "region" | "s
       | "marginWidth"
       | "totalHeight"
       | "mode"
+      | "onModeChange"
       | "highlightStyle"
       | "onHighlight"
       | "children"
@@ -36,6 +37,68 @@ afterEach(async () => {
 });
 
 describe("SelectRegion", () => {
+  it("starts shared Zoom from a marked descendant before track panning and survives the mode update", async () => {
+    const setRegion = vi.fn();
+    const onModeChange = vi.fn();
+    const onPan = vi.fn();
+    const props: SelectionTestProps = {
+      region: { chromosome: "chr1", start: 100, end: 200 },
+      setRegion,
+      mode: "pan",
+      onModeChange,
+      children: (
+        <g onPointerDown={onPan}>
+          <g data-genomebrowser-selection-mode="zoom">
+            <rect data-zoom-target="" />
+          </g>
+        </g>
+      ),
+    };
+    await renderSelection(props);
+    await act(async () =>
+      svg!
+        .querySelector("[data-zoom-target]")!
+        .dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 90 })),
+    );
+    expect(onModeChange).toHaveBeenCalledExactlyOnceWith("zoom");
+    expect(onPan).not.toHaveBeenCalled();
+    await rerenderSelection({ ...props, mode: "zoom" });
+    await act(async () => document.dispatchEvent(new MouseEvent("pointermove", { clientX: 40 })));
+    const selection = svg!.querySelector("[data-region-selection]")!;
+    expect(selection.getAttribute("height")).toBe("100");
+    expect(selection.getAttribute("x")).toBe("40");
+    expect(selection.getAttribute("width")).toBe("50");
+    await act(async () => document.dispatchEvent(new MouseEvent("pointerup", { clientX: 40 })));
+    expect(setRegion).toHaveBeenCalledExactlyOnceWith({ chromosome: "chr1", start: 120, end: 170 });
+    expect(svg!.querySelector("[data-region-selection]")).toBeNull();
+  });
+
+  it.each([
+    { disabled: true, button: 0, clientX: 60 },
+    { disabled: false, button: 2, clientX: 60 },
+    { disabled: false, button: 0, clientX: 10 },
+  ])(
+    "does not switch modes for an ineligible marked press: %j",
+    async ({ disabled, button, clientX }) => {
+      const onModeChange = vi.fn();
+      await renderSelection({
+        region: { chromosome: "chr1", start: 100, end: 200 },
+        setRegion: vi.fn(),
+        mode: "pan",
+        disabled,
+        onModeChange,
+        children: <rect data-genomebrowser-selection-mode="zoom" />,
+      });
+      await act(async () =>
+        svg!
+          .querySelector("[data-genomebrowser-selection-mode]")!
+          .dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button, clientX })),
+      );
+      expect(onModeChange).not.toHaveBeenCalled();
+      expect(svg!.querySelector("[data-region-selection]")).toBeNull();
+    },
+  );
+
   it("tracks the guide only on the overlay and removes it in Pan or while blocked", async () => {
     const props = { region: { chromosome: "chr1", start: 0, end: 100 }, setRegion: vi.fn() };
     await renderSelection(props);
@@ -392,31 +455,120 @@ describe("SelectRegion", () => {
     expect(setRegion).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["interaction gate", { disabled: true }],
-    ["region", { region: { chromosome: "chr1", start: 30, end: 50 } }],
-    ["track width", { trackWidth: 200 }],
-    ["margin width", { marginWidth: 40 }],
-    ["total height", { totalHeight: 200 }],
-  ] as const)("cancels an active drag when the %s changes", async (_name, changedProps) => {
-    const setRegion = vi.fn((_region: GenomicRegion) => ({
-      ok: true as const,
-      region: _region,
-      clamped: false,
-    }));
-    const initialProps = {
-      region: { chromosome: "chr1", start: 20, end: 40 },
-      setRegion,
-    };
-    await renderSelection(initialProps);
+  it.each(["zoom", "highlight"] as const)(
+    "invalidates %s before layout observers or native input can use changed props",
+    async (mode) => {
+      const changes: Partial<SelectionTestProps>[] = [
+        { disabled: true },
+        { region: { chromosome: "chr2", start: 30, end: 50 } },
+        { trackWidth: 200 },
+        { marginWidth: 40 },
+        { totalHeight: 200 },
+        { mode: "pan" },
+        { mode: mode === "zoom" ? "highlight" : "zoom" },
+        { highlightStyle: { color: "red", opacity: 0.5, type: "filled" } },
+      ];
+      const setRegion = vi.fn();
+      const onHighlight = vi.fn();
+      const props = {
+        region: { chromosome: "chr1", start: 20, end: 40 },
+        setRegion,
+        onHighlight,
+        mode,
+      };
+      const observe = vi.fn();
+      let mounts = 0;
+      function Child() {
+        useLayoutEffect(() => {
+          mounts += 1;
+        }, []);
+        return <rect data-child="" />;
+      }
+      function Observer() {
+        useLayoutEffect(() => {
+          observe(svg?.querySelector("[data-region-selection]"));
+          document.dispatchEvent(new MouseEvent("pointerup", { clientX: 95 }));
+        });
+        return null;
+      }
+      await renderSelection({ ...props, children: <Child /> });
+      for (const change of changes) {
+        await rerenderSelection({ ...props, children: <Child /> });
+        await startSelection(30, 80);
+        expect(svg?.querySelector("[data-region-selection]")).not.toBeNull();
+        observe.mockClear();
+        // A sibling layout effect sees this commit before passive cleanup runs.
+        await rerenderSelection({ ...props, ...change, children: <Child /> }, <Observer />);
+        expect(observe).toHaveBeenCalledWith(null);
+        expect(setRegion).not.toHaveBeenCalled();
+        expect(onHighlight).not.toHaveBeenCalled();
+        await rerenderSelection({ ...props, children: <Child /> });
+        expect(svg?.querySelector("[data-region-selection]")).toBeNull();
+      }
+      expect(mounts).toBe(1);
+    },
+  );
+
+  it("cancels when the SVG changes", async () => {
+    const props = { region: { chromosome: "chr1", start: 0, end: 100 }, setRegion: vi.fn() };
+    await renderSelection(props);
     await startSelection(30, 80);
-    expect(svg?.querySelector("[data-region-selection]")).not.toBeNull();
-
-    await rerenderSelection({ ...initialProps, ...changedProps });
-    await act(async () => document.dispatchEvent(new MouseEvent("pointerup", { clientX: 95 })));
-
-    expect(setRegion).not.toHaveBeenCalled();
+    await act(async () =>
+      root?.render(
+        <SelectRegion {...props} svg={null} marginWidth={20} trackWidth={100} totalHeight={100} />,
+      ),
+    );
     expect(svg?.querySelector("[data-region-selection]")).toBeNull();
+    await act(async () => document.dispatchEvent(new MouseEvent("pointerup", { clientX: 95 })));
+    expect(props.setRegion).not.toHaveBeenCalled();
+  });
+
+  it("cancels a ruler drag when Zoom changes back to Pan", async () => {
+    const props: SelectionTestProps = {
+      region: { chromosome: "chr1", start: 0, end: 100 },
+      setRegion: vi.fn(),
+      mode: "pan",
+      onModeChange: vi.fn(),
+      children: <rect data-genomebrowser-selection-mode="zoom" />,
+    };
+    await renderSelection(props);
+    await act(async () =>
+      svg!
+        .querySelector("[data-genomebrowser-selection-mode]")!
+        .dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 30 })),
+    );
+    await rerenderSelection({ ...props, mode: "zoom" });
+    await rerenderSelection(props);
+    await act(async () => document.dispatchEvent(new MouseEvent("pointerup", { clientX: 95 })));
+    expect(props.setRegion).not.toHaveBeenCalled();
+    expect(svg?.querySelector("[data-region-selection]")).toBeNull();
+  });
+
+  it("removes every native drag listener on invalidation and unmount", async () => {
+    const props = { region: { chromosome: "chr1", start: 0, end: 100 }, setRegion: vi.fn() };
+    await renderSelection(props);
+    for (const unmount of [false, true]) {
+      const added = vi.spyOn(document, "addEventListener");
+      const removed = vi.spyOn(document, "removeEventListener");
+      const windowAdded = vi.spyOn(window, "addEventListener");
+      const windowRemoved = vi.spyOn(window, "removeEventListener");
+      await startSelection(30, 80);
+      if (unmount) {
+        await act(async () => root?.unmount());
+        root = undefined;
+      } else {
+        await rerenderSelection({ ...props, trackWidth: 200 });
+      }
+      for (const name of ["pointermove", "pointerup", "pointercancel", "keydown"]) {
+        const call = added.mock.calls.find(([type]) => type === name)!;
+        expect(removed).toHaveBeenCalledWith(name, call[1]);
+      }
+      const blur = windowAdded.mock.calls.find(([type]) => type === "blur")!;
+      expect(windowRemoved).toHaveBeenCalledWith("blur", blur[1]);
+      vi.restoreAllMocks();
+      await act(async () => document.dispatchEvent(new MouseEvent("pointerup", { clientX: 95 })));
+      expect(props.setRegion).not.toHaveBeenCalled();
+    }
   });
 });
 
@@ -436,27 +588,33 @@ async function renderSelection(props: SelectionTestProps) {
   await rerenderSelection(props);
 }
 
-async function rerenderSelection({
-  region,
-  setRegion,
-  trackWidth = 100,
-  marginWidth = 20,
-  totalHeight = 100,
-  disabled = false,
-  ...options
-}: SelectionTestProps) {
+async function rerenderSelection(
+  {
+    region,
+    setRegion,
+    trackWidth = 100,
+    marginWidth = 20,
+    totalHeight = 100,
+    disabled = false,
+    ...options
+  }: SelectionTestProps,
+  observer?: React.ReactNode,
+) {
   await act(async () =>
     root?.render(
-      <SelectRegion
-        {...options}
-        svg={svg!}
-        marginWidth={marginWidth}
-        trackWidth={trackWidth}
-        totalHeight={totalHeight}
-        region={region}
-        setRegion={setRegion}
-        disabled={disabled}
-      />,
+      <>
+        <SelectRegion
+          {...options}
+          svg={svg!}
+          marginWidth={marginWidth}
+          trackWidth={trackWidth}
+          totalHeight={totalHeight}
+          region={region}
+          setRegion={setRegion}
+          disabled={disabled}
+        />
+        {observer}
+      </>,
     ),
   );
 }
