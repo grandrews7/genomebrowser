@@ -4,9 +4,10 @@ import type { BamTrack, Dataset, DynseqTrack, SignalTrack } from "./types";
 /**
  * Arabidopsis thaliana, TAIR10.
  *
- * Both files below are served from ./public, so they are read over HTTP range
- * requests from the dev server and need no CORS headers. Drop your own copies
- * there, or point these at a host that supports range requests.
+ * Both files below are served from a public Google Cloud Storage bucket with
+ * CORS enabled, so anyone with the app URL can read them. They are stored
+ * without transfer encoding, which matters: Content-Encoding would break the
+ * range requests these formats depend on.
  *
  * Chromosome naming is the thing to watch. TAIR and Araport call them Chr1..Chr5,
  * ChrM and ChrC, which is what the `tair10` preset declares and what the files
@@ -43,7 +44,8 @@ export const SHOW_GENE_TRACK = true;
  */
 export const GENCODE_RELEASE = "";
 export const GENE_TRACK_VARIANT: "basic" | "comprehensive" = "comprehensive";
-export const GENE_TRACK_URL: string | undefined = "/tair10.bb";
+export const GENE_TRACK_URL: string | undefined =
+  "https://storage.googleapis.com/living-models-browser-data/arabidopsis/tair10.bb";
 export const GENE_TRACK_TITLE: string | undefined = "Araport11 / Ensembl Plants TAIR10.63";
 
 export const GENE_TRACK_DISPLAY: "full" | "merged" | "tagged" = "full";
@@ -68,7 +70,7 @@ export const SIGNAL_TRACKS: SignalTrack[] = [
   {
     id: "log2-cdna-over-input",
     title: "log2 cDNA / input",
-    url: "/log2_cDNA_over_input.bw",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/log2_cDNA_over_input.bw",
     color: "#2a7a2a",
     height: 90,
   },
