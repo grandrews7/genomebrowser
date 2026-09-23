@@ -79,4 +79,39 @@ directly from the browser. Two things matter when adding files:
 gcloud storage cp yourfile.bw gs://living-models-browser-data/arabidopsis/
 ```
 
+### Renaming contigs in an ATAC pipeline bigWig
+
+The ChromBPNet inputs in `gs://greg-data/atac/chrombpnet_inputs/bigWig/` label
+TAIR10 contigs with RefSeq accessions - `NC_003070.9` through `NC_003076.8` -
+rather than `Chr1`..`Chr5`. Same sequences, same lengths, different names, so
+they render an empty track against this assembly. Rebuild them first:
+
+```sh
+# UCSC tools, macOS arm64 builds
+curl -O https://hgdownload.soe.ucsc.edu/admin/exe/macOSX.arm64/bigWigToBedGraph
+curl -O https://hgdownload.soe.ucsc.edu/admin/exe/macOSX.arm64/bedGraphToBigWig
+chmod +x bigWigToBedGraph bedGraphToBigWig
+
+# gcloud's sliced download corrupts these files; stream instead
+gcloud storage cat gs://greg-data/atac/chrombpnet_inputs/bigWig/SRX.bw \
+  --project=dotomics-models > SRX.bw
+
+./bigWigToBedGraph SRX.bw SRX.bg
+awk 'BEGIN{FS=OFS="\t"
+  m["NC_003070.9"]="Chr1"; m["NC_003071.7"]="Chr2"; m["NC_003074.8"]="Chr3"
+  m["NC_003075.7"]="Chr4"; m["NC_003076.8"]="Chr5" }
+  ($1 in m){ $1=m[$1]; print }' SRX.bg > SRX.renamed.bg
+./bedGraphToBigWig SRX.renamed.bg tair10.chrom.sizes SRX-tair10.Chr.bw
+```
+
+`tair10.chrom.sizes` is the five nuclear chromosomes under TAIR names. The awk
+filter drops any contig not in the map, so organelles present in one file and
+absent from the sizes file cannot fail the rebuild.
+
+The conversion is lossless: converting the rebuilt file back to bedGraph gives
+a byte-identical result. It takes about six seconds per sample.
+
+`sample_metadata.tsv` in that bucket maps every SRX to its tissue, treatment
+and study, which is where the track titles come from.
+
 Then add it to `src/datasets/arabidopsis.ts` and redeploy.

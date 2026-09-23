@@ -65,14 +65,27 @@ export const GENE_TAG_COLORS = [{ tag: "Ensembl_canonical", color: "#d45c2f" }];
 export const TWO_BIT_URL = "";
 export const DYNSEQ_TRACKS: DynseqTrack[] = [];
 
-/** log2 enrichment, so the signal is signed and centred near zero. */
+/**
+ * ATAC-seq accessibility, whole seedling, control versus 4 hours of ABA
+ * (PRJNA1018553). Reprocessed to TAIR10 and rebuilt with TAIR chromosome names:
+ * the pipeline's bigWigs label the contigs with RefSeq accessions
+ * (NC_003070.9 and friends), which name the same sequences at the same lengths
+ * but do not match this assembly, so they would render an empty track.
+ */
 export const SIGNAL_TRACKS: SignalTrack[] = [
   {
-    id: "log2-cdna-over-input",
-    title: "log2 cDNA / input",
-    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/log2_cDNA_over_input.bw",
+    id: "atac-seedling-control",
+    title: "ATAC seedling, control (SRX21812610)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812610.bw",
     color: "#2a7a2a",
-    height: 90,
+    height: 80,
+  },
+  {
+    id: "atac-seedling-aba",
+    title: "ATAC seedling, ABA 4h (SRX21812612)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812612.bw",
+    color: "#8a5bd0",
+    height: 80,
   },
 ];
 
