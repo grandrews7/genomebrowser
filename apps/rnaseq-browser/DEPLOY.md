@@ -51,7 +51,12 @@ firebase deploy --only hosting
 ```
 
 which publishes to `https://living-models-browser.web.app`. `firebase.json`
-already rewrites every path to `index.html` and applies the same caching split.
+rewrites every path to `index.html` and sets the same caching split as the
+bucket: fingerprinted assets immutable for a year, `index.html` explicitly
+`no-cache`. That header is not optional - Firebase defaults HTML to
+`max-age=3600`, so without it a deploy takes up to an hour to reach anyone who
+has already loaded the page, and they see the previous build with no sign
+anything is wrong.
 
 Note the different build: Firebase serves from the domain root, so it wants the
 default base, while the bucket needs the prefixed one.
