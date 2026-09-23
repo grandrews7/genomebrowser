@@ -11,9 +11,7 @@
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt .",
-    "format:check": "oxfmt . --check",
-    "build:bucket": "vite build --base=/living-models-browser-data/app/",
-    "deploy:bucket": "pnpm run build:bucket && gcloud storage cp -r dist/* gs://living-models-browser-data/app/ && gcloud storage objects update gs://living-models-browser-data/app/index.html --cache-control=\"no-cache, max-age=0\""
+    "format:check": "oxfmt . --check"
   },
   "dependencies": {
     "@emotion/react": "catalog:",
