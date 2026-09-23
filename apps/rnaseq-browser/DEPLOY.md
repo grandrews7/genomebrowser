@@ -61,6 +61,38 @@ Two things matter when adding files:
 gcloud storage cp yourfile.bw gs://living-models-browser-data/arabidopsis/
 ```
 
+### Building the phyloP track and the 2bit
+
+PlantRegMap publishes conservation as `Ath_PhyloP.bedGraph.gz`, per base over an
+18-species Brassicales alignment, already using TAIR contig names - no renaming
+needed, unlike everything else here.
+
+```sh
+gzcat Ath_PhyloP.bedGraph.gz > Ath_PhyloP.bedGraph          # 4.0 GB, 106.8M lines
+./bedGraphToBigWig Ath_PhyloP.bedGraph tair10.full.chrom.sizes Ath_PhyloP.bw
+```
+
+`tair10.full.chrom.sizes` must include `ChrC` and `ChrM`, which the bedGraph
+covers. Conversion takes about half a minute and yields 856 MB.
+
+dynseq also needs a 2bit for its letters. The pipeline's `tair10.fa` uses RefSeq
+names, so rewrite the headers first:
+
+```sh
+gcloud storage cat gs://greg-data/atac/resources/tair10/tair10.fa \
+  --project=dotomics-models \
+| awk 'BEGIN{ m["NC_003070.9"]="Chr1"; m["NC_003071.7"]="Chr2"; m["NC_003074.8"]="Chr3";
+              m["NC_003075.7"]="Chr4"; m["NC_003076.8"]="Chr5"; m["NC_000932.1"]="ChrC" }
+  /^>/ { id=substr($1,2); keep=(id in m); if(keep) print ">" m[id]; next }
+  keep { print }' > tair10.Chr.fa
+./faToTwoBit tair10.Chr.fa tair10.2bit
+```
+
+The mitochondrion is deliberately excluded. RefSeq's `NC_037304.1` is 367,808 bp
+against TAIR10's `ChrM` at 366,924 - a different sequence, not a renaming - so
+including it would misalign letters against any ChrM score. The five nuclear
+chromosomes and `ChrC` match exactly.
+
 ### Renaming contigs in an ATAC pipeline bigWig
 
 The ChromBPNet inputs in `gs://greg-data/atac/chrombpnet_inputs/bigWig/` label

@@ -58,12 +58,31 @@ export const HIGHLIGHT_COLOR = "#1f77b4";
 export const GENE_TAG_COLORS = [{ tag: "Ensembl_canonical", color: "#d45c2f" }];
 
 /**
- * No dynseq tracks: they need a reference 2bit and per-base scores, and there
- * is no Arabidopsis phyloP equivalent to hand. Generate a 2bit with
- * `faToTwoBit TAIR10.fa tair10.2bit` if you add model attribution scores later.
+ * PlantRegMap phyloP over an 18-species Brassicales alignment, drawn as a
+ * filled signal when zoomed out and as reference nucleotides scaled by their
+ * score when zoomed in, negatives below the axis.
+ *
+ * Conservation is the independent evidence here: it comes from outside this
+ * project's own models, so a peak sitting on conserved bases is an argument
+ * rather than a restatement. Model predictions and contribution scores belong
+ * alongside it as separate tracks, not as a substitute.
+ *
+ * The 2bit supplies the letters. It is built from the pipeline's TAIR10 fasta
+ * with its RefSeq contig names rewritten to TAIR convention, minus the
+ * mitochondrion: RefSeq's NC_037304.1 is 367,808 bp against TAIR10's 366,924,
+ * a genuinely different sequence, so it is left out rather than misaligned.
  */
-export const TWO_BIT_URL = "";
-export const DYNSEQ_TRACKS: DynseqTrack[] = [];
+export const TWO_BIT_URL =
+  "https://storage.googleapis.com/living-models-browser-data/arabidopsis/tair10.2bit";
+
+export const DYNSEQ_TRACKS: DynseqTrack[] = [
+  {
+    id: "phylop-brassicales",
+    title: "phyloP, 18-species Brassicales (PlantRegMap)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/phylop-brassicales18.bw",
+    height: 110,
+  },
+];
 
 /**
  * ATAC-seq accessibility, whole seedling, control versus 4 hours of ABA
