@@ -105,16 +105,14 @@ export function decodeBamRecords(
     const end = position + Math.max(referenceSpan, 1);
     if (end <= options.regionStart || position >= options.regionEnd) continue;
 
-    let sequence = "";
-    if (sequenceLength > 0) {
-      const nucleotides = new Array<string>(sequenceLength);
-      for (let index = 0; index < sequenceLength; index++) {
-        const packed = data[sequenceStart + (index >> 1)]!;
-        const code = index % 2 === 0 ? packed >> 4 : packed & 0xf;
-        nucleotides[index] = SEQUENCE_NUCLEOTIDES[code]!;
-      }
-      sequence = nucleotides.join("");
-    }
+    // Two bases per byte, high nibble first.
+    const sequence =
+      sequenceLength > 0
+        ? Array.from({ length: sequenceLength }, (_unused, index) => {
+            const packed = data[sequenceStart + (index >> 1)]!;
+            return SEQUENCE_NUCLEOTIDES[index % 2 === 0 ? packed >> 4 : packed & 0xf]!;
+          }).join("")
+        : "";
 
     records.push({
       chromosome: options.chromosome,
