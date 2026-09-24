@@ -85,26 +85,124 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
 ];
 
 /**
- * ATAC-seq accessibility, whole seedling, control versus 4 hours of ABA
- * (PRJNA1018553). Reprocessed to TAIR10 and rebuilt with TAIR chromosome names:
- * the pipeline's bigWigs label the contigs with RefSeq accessions
- * (NC_003070.9 and friends), which name the same sequences at the same lengths
- * but do not match this assembly, so they would render an empty track.
+ * Every TAIR10 ATAC-seq sample in the collection, grouped by study: a tissue and
+ * treatment panel (PRJNA1018553), untreated seedling replicates (PRJNA895400),
+ * pollen vegetative and sperm cells (PRJNA682444), and siliques (PRJNA640237).
+ * Replicates of one condition share a colour so the eye groups them.
+ *
+ * All were reprocessed to TAIR10 and rebuilt with TAIR chromosome names: the
+ * pipeline's bigWigs label contigs with RefSeq accessions (NC_003070.9 and
+ * friends), which name the same sequences at the same lengths but do not match
+ * this assembly, so they would render empty tracks. See DEPLOY.md.
+ *
+ * Tracks are short, because fifteen of them at full height would not fit on a
+ * screen. Raise `height` on the few you are comparing.
  */
 export const SIGNAL_TRACKS: SignalTrack[] = [
   {
-    id: "atac-seedling-control",
-    title: "ATAC seedling, control (SRX21812610)",
+    id: "atac-srx21812610",
+    title: "ATAC whole seedling, control (SRX21812610)",
     url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812610.bw",
-    color: "#2a7a2a",
-    height: 80,
+    color: "#2a7a4a",
+    height: 44,
   },
   {
-    id: "atac-seedling-aba",
-    title: "ATAC seedling, ABA 4h (SRX21812612)",
+    id: "atac-srx21812612",
+    title: "ATAC whole seedling, ABA 4h (SRX21812612)",
     url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812612.bw",
     color: "#8a5bd0",
-    height: 80,
+    height: 44,
+  },
+  {
+    id: "atac-srx21812623",
+    title: "ATAC root, ABA 4h rep1 (SRX21812623)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812623.bw",
+    color: "#3f7fbf",
+    height: 44,
+  },
+  {
+    id: "atac-srx21812624",
+    title: "ATAC root, ABA 4h rep2 (SRX21812624)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812624.bw",
+    color: "#3f7fbf",
+    height: 44,
+  },
+  {
+    id: "atac-srx21812639",
+    title: "ATAC mesophyll, ABA 4h (SRX21812639)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812639.bw",
+    color: "#b5651d",
+    height: 44,
+  },
+  {
+    id: "atac-srx21812658",
+    title: "ATAC guard cell, CO2 4h (SRX21812658)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX21812658.bw",
+    color: "#0f8f8f",
+    height: 44,
+  },
+  {
+    id: "atac-srx18063716",
+    title: "ATAC seedling, WT rep1 (SRX18063716)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX18063716.bw",
+    color: "#2a7a4a",
+    height: 44,
+  },
+  {
+    id: "atac-srx18063718",
+    title: "ATAC seedling, WT rep2 (SRX18063718)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX18063718.bw",
+    color: "#2a7a4a",
+    height: 44,
+  },
+  {
+    id: "atac-srx9629755",
+    title: "ATAC pollen, V-Mt VC rep1 (SRX9629755)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX9629755.bw",
+    color: "#a33b7a",
+    height: 44,
+  },
+  {
+    id: "atac-srx9629756",
+    title: "ATAC pollen, V-Mt VC rep2 (SRX9629756)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX9629756.bw",
+    color: "#a33b7a",
+    height: 44,
+  },
+  {
+    id: "atac-srx14636807",
+    title: "ATAC pollen, V-Mt VC rep4 (SRX14636807)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX14636807.bw",
+    color: "#a33b7a",
+    height: 44,
+  },
+  {
+    id: "atac-srx9629757",
+    title: "ATAC pollen, V-Mt SC rep1 (SRX9629757)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX9629757.bw",
+    color: "#c2185b",
+    height: 44,
+  },
+  {
+    id: "atac-srx9629759",
+    title: "ATAC pollen, WT VC rep1 (SRX9629759)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX9629759.bw",
+    color: "#7b1fa2",
+    height: 44,
+  },
+  {
+    id: "atac-srx9629760",
+    title: "ATAC pollen, WT VC rep2 (SRX9629760)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX9629760.bw",
+    color: "#7b1fa2",
+    height: 44,
+  },
+  {
+    id: "atac-srx8571616",
+    title: "ATAC siliques (SRX8571616)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX8571616.bw",
+    color: "#6d7f1f",
+    height: 44,
   },
 ];
 

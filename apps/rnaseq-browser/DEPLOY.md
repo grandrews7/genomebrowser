@@ -127,3 +127,15 @@ a byte-identical result. It takes about six seconds per sample.
 
 `sample_metadata.tsv` in that bucket maps every SRX to its tissue, treatment
 and study, which is where the track titles come from.
+
+All fifteen TAIR10 samples are converted and uploaded. After adding more, check
+the two things that fail silently rather than erroring:
+
+```sh
+curl -sI -H "Range: bytes=0-63" \
+  https://storage.googleapis.com/living-models-browser-data/arabidopsis/atac-SRX.bw \
+  | grep -iE "^HTTP/|stored-content-encoding"
+```
+
+expecting `206` and `identity`, and confirm the contig names in the served bytes
+are `Chr1`..`Chr5` rather than RefSeq accessions.
