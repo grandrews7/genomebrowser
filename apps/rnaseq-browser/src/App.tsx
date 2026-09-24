@@ -15,6 +15,7 @@ import {
   getGeneDatasetsForAssembly,
 } from "@weng-lab/genomebrowser-tracks/gene";
 import { useEffect, useRef, useState } from "react";
+import { APP_TITLE, LOGO_ALT, LOGO_URL } from "./branding";
 import {
   ASSEMBLY,
   BAM_TRACKS,
@@ -219,7 +220,10 @@ export function App() {
   return (
     <main>
       <header>
-        <h1>RNA-seq tracks</h1>
+        <div className="masthead">
+          <h1>{APP_TITLE}</h1>
+          {LOGO_URL && <img className="logo" src={LOGO_URL} alt={LOGO_ALT} title={LOGO_ALT} />}
+        </div>
         <div className="controls">
           <input
             aria-label="Genomic region"
@@ -245,6 +249,7 @@ export function App() {
           </button>
         </div>
         <p className="readout">
+          <span className="assembly">{ASSEMBLY.id}</span>
           {formatRegion(region)}{" "}
           <span className="dim">({(region.end - region.start).toLocaleString("en-US")} bp)</span>
         </p>
