@@ -70,4 +70,4 @@ and `NUCLEOTIDE_COLORS` are exported for callers that want to draw the same lett
 ## Source requirements
 
 Both files must support HTTP range requests and send permissive CORS headers when cross-origin. See
-[Data source troubleshooting](../dataSources.md).
+[Data source troubleshooting](../../04-troubleshooting.md).

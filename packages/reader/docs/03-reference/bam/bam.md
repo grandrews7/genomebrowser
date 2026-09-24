@@ -1,14 +1,8 @@
-# Read BAM files
+# BAM alignments
 
 Use `createBamFile` to read sequence alignments from a public HTTP(S) BAM file and its BAI index.
 The reader fetches only the compressed blocks the index says overlap each region, so payload scales
 with the window rather than the file.
-
-## Install
-
-```sh
-npm install @weng-lab/genomic-reader@beta
-```
 
 ## Read alignments
 
@@ -96,3 +90,61 @@ const records = await file.read(region, { signal: controller.signal });
 
 The header and index are cached on the file object after the first successful read, so later reads
 of other regions fetch only alignment blocks.
+
+## Public types and methods
+
+Import all APIs here from `@weng-lab/genomic-reader`.
+
+```ts
+type BamFileOptions = { url: string; indexUrl?: string };
+type BamCigarOperation = "M" | "I" | "D" | "N" | "S" | "H" | "P" | "=" | "X";
+type BamCigarSegment = { operation: BamCigarOperation; length: number };
+type BamRecord = GenomicRecord & {
+  name: string;
+  flag: number;
+  mappingQuality: number;
+  strand: "+" | "-";
+  cigar: BamCigarSegment[];
+  sequence: string;
+};
+type BamReference = { name: string; length: number };
+type BamHeader = { text: string; references: BamReference[] };
+interface BamFile extends GenomicFile<BamRecord> {
+  read(region: GenomicRegion, options?: ReadOptions): Promise<BamRecord[]>;
+  getHeader(options?: ReadOptions): Promise<BamHeader>;
+}
+
+function createBamFile(options: BamFileOptions): BamFile;
+```
+
+### createBamFile and BamFileOptions
+
+`url` is required and must be an absolute HTTP(S) URL. `indexUrl` defaults to `url` with `.bai`
+appended. Invalid options or URLs throw synchronously; file contents are validated lazily by
+`read()`.
+
+### BamFile and BamRecord
+
+`read()` returns the alignments overlapping the region, sorted by `start`. `end` is derived from the
+CIGAR operations that advance along the reference, so a spliced record spans its introns. A region
+naming a reference the file does not contain returns an empty array rather than rejecting, because
+panning onto an unknown contig is ordinary. Coordinates must be finite nonnegative integers with
+`start < end`; invalid regions reject asynchronously.
+
+Header and index metadata are cached on the file object after the first successful read. HTTP,
+decoding, and abort failures reject rather than returning partial results.
+
+### The header
+
+`getHeader()` returns the plain-text SAM header and the reference list in file order. Read it to
+discover what a file calls its references before querying, since names are matched exactly.
+
+### CIGAR
+
+`cigar` preserves the operations in file order. `M`, `D`, `N`, `=`, and `X` advance along the
+reference; `I`, `S`, `H`, and `P` do not.
+
+## Related reference
+
+[Shared regional contract](../regionalReading/genomicFile.md) · [BAM alignments index](README.md) ·
+[All reader APIs](../README.md)

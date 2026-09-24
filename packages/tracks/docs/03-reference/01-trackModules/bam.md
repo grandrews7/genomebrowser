@@ -89,4 +89,4 @@ want the same depths and junction tallies the track draws, without rendering it.
 The BAM and its index must both be reachable, support HTTP range requests, and send permissive CORS
 headers when cross-origin. Reference names are matched exactly, so a file whose header says `1` will
 not answer a query for `chr1` and the track renders empty. See
-[Data source troubleshooting](../dataSources.md).
+[Data source troubleshooting](../../04-troubleshooting.md).
