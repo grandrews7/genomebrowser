@@ -49,6 +49,19 @@ spikes. Zooming in rescales to the new window.
 Soft-masked reference bases arrive lowercase and are upper-cased before the glyph is chosen, so a
 repeat-masked region still draws letters.
 
+Letter height encodes the score, so a poorly conserved base inside an otherwise conserved feature is
+genuinely tiny: a start codon whose middle base scores near zero draws as a full-height `A`, a
+sliver of a `T`, and a full-height `G`. That is the track reporting the data, not losing it.
+
+A base whose score rounds to zero height is not drawn at all. **A gap means "scored near zero", not
+"no data"** - the distinction matters when checking a sequence by eye, because the drawn letters are
+not one per base and cannot be counted off against a reference. Read positions from the tooltip, or
+from a glyph's own x coordinate, rather than by counting glyphs.
+
+There is currently no minimum glyph height. Adding one, ideally as a configurable floor so a caller
+can choose how visible near-zero bases should be, would make low-scoring stretches legible without
+changing what the heights mean.
+
 ## Glyphs
 
 The nucleotide shapes are the weng-lab LogoJS geometry, emitted as plain SVG. `NUCLEOTIDE_GLYPHS`
