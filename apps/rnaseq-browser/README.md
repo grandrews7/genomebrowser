@@ -23,40 +23,51 @@ To add one, copy `datasets/hepg2.ts`, point it at your files, and name it in
 contract each file satisfies, so a missing member is a compile error rather than
 an empty track. Everything else is wiring.
 
-## App-local track modules
+## Track modules
 
-| Module                                                       | What it draws                                                                          |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| [`src/tracks/bamModule.tsx`](src/tracks/bamModule.tsx)       | Coverage, read pileup, and sashimi junction arcs, all derived live from BAM CIGARs.    |
-| [`src/tracks/dynseqModule.tsx`](src/tracks/dynseqModule.tsx) | Per-base scores as a filled signal, becoming scaled nucleotide letters when zoomed in. |
+The BAM and dynseq modules are no longer app-local. They live in
+`packages/tracks` and are imported like any other first-party track:
 
-They are app modules, not published API. Promote one into
-`packages/tracks` only if it earns a place in the curated first-party set.
+```ts
+import { bamModule } from "@weng-lab/genomebrowser-tracks/bam";
+import { dynseqModule } from "@weng-lab/genomebrowser-tracks/dynseq";
+```
 
-Both build their settings form out of `@weng-lab/genomebrowser-tracks/shared`,
-so they get the same MUI layout as the first-party tracks and, more to the
-point, the same deferred commits: a URL or a zoom gate applies when you set it,
-not on every keystroke, which matters because those fields are marked
-`fetchOnChange` and each commit costs a BAM read.
+| Module   | Displays                        | What it draws                                                                          |
+| -------- | ------------------------------- | -------------------------------------------------------------------------------------- |
+| `bam`    | `coverage`, `pileup`, `sashimi` | Depth, stacked reads, and junction arcs, all derived live from the alignments.         |
+| `dynseq` | `full`                          | Per-base scores as a filled signal, becoming scaled nucleotide letters when zoomed in. |
 
-## The BAM reader
+BAM reading is in `@weng-lab/genomic-reader` as `createBamFile`, so the app has
+no BAM-specific dependency of its own. Neither module is in the published
+2.0.0 packages yet; both are open upstream as weng-lab/genomebrowser#263 and
+\#264, so this fork's build is the only place they exist. That matters if you
+consume the packages from another project - see the note in `DEPLOY.md`.
 
-`@weng-lab/genomic-reader` has no BAM reader, so `bamModule` is the one place
-that still depends on the legacy unscoped `genomic-reader` (1.4.10, axios-based)
-for `BamReader`. That package was written for Node and checks
-`response.data instanceof Buffer`, which is why [`src/polyfills.ts`](src/polyfills.ts)
-installs a `Buffer` global and `vite.config.ts` defines `global`. Everything
-else - bigWig and 2bit - uses `@weng-lab/genomic-reader`.
+## Reading BAM in a browser
 
-BAM is expensive to read in the browser: coverage, pileup, and arcs all come
-from materializing every alignment in the window. Each view has its own zoom
-gate in `src/config.ts`; past the widest one the fetcher returns nothing and the
-track says so rather than trying.
+Coverage, pileup, and arcs all come from materializing every alignment in the
+window, so `maxBases` in the dataset bounds it. It measures the **render**
+window, which the browser overscans to 3x the visible span: a 30,000 gate starts
+drawing at about 10,000 bp visible.
 
-Junction counts from BAM are **view-local**: only reads inside the fetched
-window are tallied, so a count can change as you pan. They also carry no
-annotated/novel flag, no unique-vs-multi split, and no splice-site motif, all of
-which need STAR's `SJ.out.tab` and a GTF rather than the alignments alone.
+Window size is a poor proxy for cost, though. What a fetch pays for is bytes,
+and a highly expressed gene breaks the relationship in both directions:
+Arabidopsis RBCS1A holds 456,000 reads inside 1,500 bp, while an intergenic
+window of the same width costs almost as much because the index resolves it to
+similarly fragmented chunks.
+
+The reader caches the compressed bytes it has read, bounded per file, so panning
+inside a region already fetched issues no requests at all.
+
+Junction counts are **view-local**: only reads inside the fetched window are
+tallied, so a count can change as you pan. They also carry no annotated/novel
+flag, no unique-vs-multi split, and no splice-site motif, all of which need the
+aligner's own splice output and a GTF rather than the alignments alone.
+
+A note on MAPQ: STAR writes 255 for a uniquely mapped read, which the SAM spec
+reserves for "unavailable". Leave `minMappingQuality` at 0 for STAR output;
+filtering on it behaves in the opposite way to what you would expect.
 
 ## Running it
 

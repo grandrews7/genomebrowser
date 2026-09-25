@@ -181,3 +181,40 @@ curl -sI -H "Range: bytes=0-63" \
 
 expecting `206` and `identity`, and confirm the contig names in the served bytes
 are `Chr1`..`Chr5` rather than RefSeq accessions.
+
+## Using these packages from another project
+
+The BAM reader and the BAM and dynseq track modules are not in the published
+`2.0.0` packages - they are open upstream as weng-lab/genomebrowser#263 and
+\#264. This fork carries the same version number, so `npm install
+@weng-lab/genomebrowser-tracks` resolves to upstream's build, which has no
+`./bam` and no `./dynseq`, and nothing warns you.
+
+Until those merge and a release ships, pack tarballs from this fork. `dist` is
+gitignored and there is no `prepare` script, so installing straight from GitHub
+gives a package with no build output; `pnpm pack` runs `prepack`, which builds
+the whole chain:
+
+```sh
+mkdir -p ~/tarballs
+for p in @weng-lab/genomebrowser @weng-lab/genomebrowser-tracks @weng-lab/genomic-reader; do
+  pnpm --filter "$p" pack --pack-destination ~/tarballs
+done
+```
+
+Reference them by path in the other project:
+
+```json
+"@weng-lab/genomebrowser": "file:../tarballs/weng-lab-genomebrowser-2.0.0.tgz",
+"@weng-lab/genomebrowser-tracks": "file:../tarballs/weng-lab-genomebrowser-tracks-2.0.0.tgz",
+"@weng-lab/genomic-reader": "file:../tarballs/weng-lab-genomic-reader-2.0.0.tgz"
+```
+
+Then import normally - `bamModule` from `@weng-lab/genomebrowser-tracks/bam`,
+`createBamFile` from `@weng-lab/genomic-reader`. The Vite aliases and tsconfig
+path mappings this repo uses are only needed inside the workspace, where the
+packages resolve to TypeScript source rather than to `dist`.
+
+Re-pack after changing a package, which suits consuming a stable snapshot rather
+than co-developing. For a project inside this monorepo, add it under `apps/` and
+depend on `workspace:*` instead.
