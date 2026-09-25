@@ -128,6 +128,48 @@ a byte-identical result. It takes about six seconds per sample.
 `sample_metadata.tsv` in that bucket maps every SRX to its tissue, treatment
 and study, which is where the track titles come from.
 
+### Renaming contigs in an RNA-seq BAM
+
+The STAR output for SRX4488631 carries the same RefSeq accessions, and a BAM
+header can be rewritten in place rather than rebuilt: `reheader` touches only the
+header block, so a 1.1 GB file takes under two seconds. The index must be
+regenerated afterwards, because changing the header length shifts every virtual
+offset the old `.bai` recorded.
+
+```sh
+samtools reheader -c "sed \
+  -e s/SN:NC_003070.9/SN:Chr1/ -e s/SN:NC_003071.7/SN:Chr2/ \
+  -e s/SN:NC_003074.8/SN:Chr3/ -e s/SN:NC_003075.7/SN:Chr4/ \
+  -e s/SN:NC_003076.8/SN:Chr5/ -e s/SN:NC_000932.1/SN:ChrC/" \
+  Aligned.sortedByCoord.out.bam > SRX4488631.bam
+samtools index -@ 4 SRX4488631.bam
+```
+
+`NC_037304.1` is deliberately not renamed. RefSeq's mitochondrion is 367,808 bp
+and TAIR10's `ChrM` is 366,924, so they are different assemblies of the same
+organelle; calling it `ChrM` would give a contig whose coordinates line up with
+nothing else here. Left under its accession it is simply absent from the
+assembly and unreachable, which is the honest outcome. Every other contig
+matched TAIR10 lengths exactly, so those renames are safe.
+
+The stranded bigWigs need the full bedGraph round trip as above, with `ChrC`
+added to the map and `NC_037304.1` dropped.
+
+### Uploading from the cluster
+
+The BAM is 1.1 GB and a home upstream will not move that in reasonable time.
+HiPerGator has `gcloud` under `/blue/jhernandezjarqui/andrewsg/pixi/bin` already
+authenticated, so upload from there instead and skip the round trip through a
+laptop: it sustains about 400 MiB/s.
+
+Turn off parallel composite upload first. It splits the object into parts and
+recombines them server-side, which leaves the result without an MD5 and is worth
+avoiding for files served by range request:
+
+```sh
+gcloud config set storage/parallel_composite_upload_enabled False
+```
+
 All fifteen TAIR10 samples are converted and uploaded. After adding more, check
 the two things that fail silently rather than erroring:
 
