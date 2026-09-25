@@ -19,8 +19,11 @@ import type { BamTrack, Dataset, DynseqTrack, SignalTrack } from "./types";
 /** Chr1..Chr5, ChrM, ChrC. Lengths match this bigWig's own header exactly. */
 export const ASSEMBLY = tair10;
 
-/** FLC (AT5G10140) and its neighbours. */
-export const INITIAL_REGION = "Chr5:3170000-3182000";
+/**
+ * UBQ10 (AT4G05320), a plus-strand gene expressed highly enough to show clear
+ * junctions without the read volume that makes RBCS1A impractical to fetch.
+ */
+export const INITIAL_REGION = "Chr4:2717500-2721000";
 
 export const SHOW_GENE_TRACK = true;
 
@@ -99,6 +102,20 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
  * screen. Raise `height` on the few you are comparing.
  */
 export const SIGNAL_TRACKS: SignalTrack[] = [
+  {
+    id: "rnaseq-plus",
+    title: "RNA-seq coverage, plus strand (SRX4488631)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/rnaseq-plus.bw",
+    color: "#1f6fb4",
+    height: 60,
+  },
+  {
+    id: "rnaseq-minus",
+    title: "RNA-seq coverage, minus strand (SRX4488631)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/rnaseq-minus.bw",
+    color: "#b4431f",
+    height: 60,
+  },
   {
     id: "atac-srx21812610",
     title: "ATAC whole seedling, control (SRX21812610)",
@@ -207,7 +224,41 @@ export const SIGNAL_TRACKS: SignalTrack[] = [
 ];
 
 /** No alignments yet; add a BAM and its .bai to ./public to see reads. */
-export const BAM_TRACKS: BamTrack[] = [];
+/**
+ * RNA-seq alignments, for coverage, read pileup, and splice-junction arcs.
+ *
+ * STAR output, so N operations mark introns and the sashimi display has
+ * something to count. The file was reheadered from RefSeq accessions to TAIR
+ * names before upload; the mitochondrion was left as NC_037304.1 rather than
+ * renamed, because RefSeq's 367,808 bp assembly is not TAIR10's 366,924 bp
+ * ChrM. It is therefore absent from this assembly and simply not reachable.
+ *
+ * `maxBases` bounds the window, but window size is a poor proxy for cost here:
+ * what the fetch pays for is the number of alignments, and a highly expressed
+ * gene breaks the relationship. RBCS1A holds 456,000 reads inside 1,500 bp,
+ * roughly twenty times the whole UBQ10 window, so it stalls the fetch no matter
+ * how tight the base gate is.
+ *
+ * Note on MAPQ: STAR writes 255 for a uniquely mapped read, which the SAM spec
+ * reserves for "unavailable". 99.8% of reads here carry it, so a filter that
+ * discards 255 as meaningless would discard nearly the whole library.
+ * `minMappingQuality` is left at 0 for that reason.
+ */
+export const BAM_TRACKS: BamTrack[] = [
+  {
+    id: "rnaseq-bam",
+    title: "RNA-seq alignments (SRX4488631)",
+    url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/SRX4488631.bam",
+    height: 300,
+    display: "sashimi",
+    maxBases: 30000,
+    // Arabidopsis introns are short: the median is near 100 bp and few exceed a
+    // couple of kb. Junctions spanning tens of kb are readthrough or
+    // misalignment rather than splicing, and they flatten every real arc into
+    // the baseline, so they are dropped.
+    maxJunctionSpan: 10000,
+  },
+];
 
 /** Fails to compile if anything above is missing or the wrong shape. */
 const dataset = {

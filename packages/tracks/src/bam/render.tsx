@@ -165,7 +165,11 @@ function Sashimi({
 
   const junctions = filterJunctions(computeJunctions(data), config);
   if (junctions.length === 0) return null;
-  const arcs = layoutJunctionArcs(junctions, { region, width, height });
+  // Junctions routinely splice past both edges of the fetched region; an arc
+  // drawn entirely off the canvas is noise.
+  const arcs = layoutJunctionArcs(junctions, { region, width, height }).filter(
+    (arc) => arc.x2 >= 0 && arc.x1 <= width,
+  );
 
   return (
     <>
