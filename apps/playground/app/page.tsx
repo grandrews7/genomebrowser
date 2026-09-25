@@ -21,7 +21,7 @@ if (!dataset)
 
 const useBrowserStore = createBrowserStore({
   assembly: hg38,
-  region: { chromosome: "chr1", start: 14458, end: 14518 },
+  region: { chromosome: "chr12", start: 53379900, end: 53382600 },
   marginWidth: 180,
   trackWidth: 1000,
 });
@@ -38,12 +38,45 @@ const useTrackStore = createTrackStore({
       config: { url: dataset.url },
     }),
     bamModule.create({
-      base: { id: "Immune-bam", title: "Immune · hg38 BAM", display: "pack" },
+      base: {
+        id: "k562-coverage",
+        title: "K562 long-read RNA-seq · coverage",
+        display: "coverage",
+        height: 70,
+      },
       source: "user",
       config: {
         sequenceUrl: "https://users.wenglab.org/niship/hg38.2bit",
-        url: "https://users.wenglab.org/niship/Immune.bam",
-        indexUrl: "https://users.wenglab.org/niship/Immune.bam.bai",
+        url: "https://users.wenglab.org/niship/ENCSR526TQU.ENCFF322UJU.K562.bam",
+        indexUrl: "https://users.wenglab.org/niship/ENCSR526TQU.ENCFF322UJU.K562.bam.bai",
+      },
+    }),
+    bamModule.create({
+      base: {
+        id: "k562-sashimi",
+        title: "K562 long-read RNA-seq · sashimi",
+        display: "sashimi",
+        height: 130,
+      },
+      source: "user",
+      config: {
+        sequenceUrl: "https://users.wenglab.org/niship/hg38.2bit",
+        url: "https://users.wenglab.org/niship/ENCSR526TQU.ENCFF322UJU.K562.bam",
+        indexUrl: "https://users.wenglab.org/niship/ENCSR526TQU.ENCFF322UJU.K562.bam.bai",
+      },
+    }),
+    bamModule.create({
+      base: {
+        id: "k562-pack",
+        title: "K562 long-read RNA-seq · pack",
+        display: "pack",
+        height: 14,
+      },
+      source: "user",
+      config: {
+        sequenceUrl: "https://users.wenglab.org/niship/hg38.2bit",
+        url: "https://users.wenglab.org/niship/ENCSR526TQU.ENCFF322UJU.K562.bam",
+        indexUrl: "https://users.wenglab.org/niship/ENCSR526TQU.ENCFF322UJU.K562.bam.bai",
       },
     }),
   ],
@@ -98,9 +131,10 @@ export default function Home() {
         <GenomeBrowser browserStore={useBrowserStore} trackStore={useTrackStore} />
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        The HG00096 hg38 example contains two alignments, one on each strand. Use BAM track settings
-        to switch between dense, squish, pack, and full. Alignments are shown below a 50,000 bp
-        visible span.
+        K562 long-read RNA-seq over SP1, drawn three ways from one BAM. Coverage is per-base depth
+        from aligned blocks only, so introns read as uncovered. Sashimi adds one arc per splice
+        junction, labelled with the reads supporting it. Pack draws the alignments themselves; use
+        BAM track settings to switch between dense, squish, pack, and full.
       </Typography>
     </main>
   );

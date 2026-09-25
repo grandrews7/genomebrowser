@@ -3,6 +3,7 @@ import type { BamRecord } from "@weng-lab/genomic-reader";
 import { createGenomicXScale } from "../shared/coordinates";
 import { packViewportRows } from "../shared/layout/viewportRows";
 import { intersectsVisibleRegion } from "../shared/viewport";
+import { includeBamRecord } from "./junctions";
 import type { BamConfig, BamDisplay } from "./types";
 
 export type BamGlyph = {
@@ -25,15 +26,7 @@ export function layoutBam(
   const viewportStart = Math.max(0, x(visibleRegion.start));
   const viewportEnd = Math.min(width, x(visibleRegion.end));
   const glyphs: BamGlyph[] = records
-    .filter(
-      (record) =>
-        intersectsVisibleRegion(record, region) &&
-        (record.flags & 4) === 0 &&
-        (config.showDuplicates || !(record.flags & 1024)) &&
-        // MAPQ 255 is unavailable, not evidence of high confidence.
-        (config.minimumMappingQuality === 0 ||
-          (record.mappingQuality !== 255 && record.mappingQuality >= config.minimumMappingQuality)),
-    )
+    .filter((record) => intersectsVisibleRegion(record, region) && includeBamRecord(record, config))
     .map((record) => {
       const start = Math.max(0, x(record.start));
       const end = Math.min(width, Math.max(start + 1, x(record.end)));

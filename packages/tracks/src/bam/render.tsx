@@ -1,7 +1,20 @@
-import { useInteraction, useTooltip, type TrackRendererProps } from "@weng-lab/genomebrowser";
+import {
+  useInteraction,
+  useTooltip,
+  type GenomicRegion,
+  type TrackRendererProps,
+} from "@weng-lab/genomebrowser";
 import type { BamRecord, TwoBitRecord } from "@weng-lab/genomic-reader";
 import { createGenomicXScale } from "../shared/coordinates";
 import { useRowLayout } from "../shared/layout";
+import { condenseSignalRecords } from "../shared/signal";
+import {
+  computeCoverageRuns,
+  computeJunctions,
+  filterJunctions,
+  includeBamRecord,
+  layoutJunctionArcs,
+} from "./junctions";
 import { darkenBamColor, layoutBam } from "./layout";
 import type { BamConfig, BamData, BamDisplay } from "./types";
 
@@ -17,6 +30,159 @@ export function PackBam(props: Props) {
 }
 export function FullBam(props: Props) {
   return <BamRenderer {...props} display="full" />;
+}
+export function CoverageBam(props: Props) {
+  return <AggregateBam {...props} mode="coverage" />;
+}
+export function SashimiBam(props: Props) {
+  return <AggregateBam {...props} mode="sashimi" />;
+}
+
+/** Fraction of the track the coverage band keeps when arcs sit below it. */
+const COVERAGE_SHARE = 0.4;
+const SECTION_GAP = 4;
+
+/**
+ * Depth and splice junctions, aggregated over every read in view.
+ *
+ * These are the two views that answer "how much signal is here" and "which
+ * splice forms are present", neither of which can be read off a pileup by eye.
+ * Both share the pileup's read filter so the three displays agree about which
+ * alignments exist.
+ */
+function AggregateBam({
+  config,
+  data,
+  region,
+  visibleRegion,
+  width,
+  height,
+  mode,
+}: Props & { mode: "coverage" | "sashimi" }) {
+  const zoomRequired = visibleRegion.end - visibleRegion.start >= config.maxWindow;
+  const status = (zoomRequired ? "Zoom in to see BAM track" : undefined) ?? data.message;
+  const records = zoomRequired
+    ? []
+    : data.records.filter((record) => includeBamRecord(record, config));
+  const x = createGenomicXScale(region, width);
+
+  const coverageHeight = mode === "sashimi" ? Math.round(height * COVERAGE_SHARE) : height;
+  const arcsY = coverageHeight + SECTION_GAP;
+  const arcsHeight = Math.max(1, height - arcsY);
+
+  return (
+    <g data-bam-display={mode}>
+      <rect width={width} height={height} fill="transparent" pointerEvents="none" />
+      {status && (
+        <text x={Math.max(0, x(visibleRegion.start)) + 4} y={11} fontSize={11} fill="#475569">
+          {status}
+        </text>
+      )}
+      <Coverage
+        records={records}
+        region={region}
+        width={width}
+        height={coverageHeight}
+        color={config.coverageColor}
+      />
+      {mode === "sashimi" && (
+        <g transform={`translate(0, ${arcsY})`}>
+          <Junctions
+            records={records}
+            config={config}
+            region={region}
+            width={width}
+            height={arcsHeight}
+            color={config.coverageColor}
+          />
+        </g>
+      )}
+    </g>
+  );
+}
+
+function Coverage({
+  records,
+  region,
+  width,
+  height,
+  color,
+}: {
+  records: BamRecord[];
+  region: GenomicRegion;
+  width: number;
+  height: number;
+  color: string;
+}) {
+  // Reuse the shared condenser so depth bins to pixels exactly the way a BigWig
+  // signal track does, and the two read the same at a glance.
+  const points = condenseSignalRecords(computeCoverageRuns(records, region), region, width);
+  let peak = 0;
+  for (const point of points) {
+    if (point.max !== null && point.max > peak) peak = point.max;
+  }
+  if (peak === 0) return null;
+
+  let path = `M 0 ${height}`;
+  for (const point of points) {
+    const value = point.max ?? 0;
+    path += ` L ${point.x} ${(height - (value / peak) * height).toFixed(2)}`;
+  }
+  path += ` L ${width} ${height} Z`;
+
+  return (
+    <>
+      <path d={path} fill={color} opacity={0.85} />
+      <text x={2} y={10} fontSize={10} fill="#666">
+        {peak.toLocaleString("en-US")}
+      </text>
+    </>
+  );
+}
+
+function Junctions({
+  records,
+  config,
+  region,
+  width,
+  height,
+  color,
+}: {
+  records: BamRecord[];
+  config: BamConfig;
+  region: GenomicRegion;
+  width: number;
+  height: number;
+  color: string;
+}) {
+  const junctions = filterJunctions(computeJunctions(records), config);
+  if (junctions.length === 0) return null;
+  // Long reads routinely splice past both edges of the fetched region, so drop
+  // the arcs that would be drawn entirely off the canvas rather than emit them.
+  const arcs = layoutJunctionArcs(junctions, { region, width, height }).filter(
+    (arc) => arc.x2 >= 0 && arc.x1 <= width,
+  );
+
+  return (
+    <>
+      {arcs.map((arc) => (
+        <g key={`${arc.junction.start}:${arc.junction.end}`} data-junction={arc.junction.count}>
+          <path
+            d={`M ${arc.x1} ${height - 2} Q ${arc.midX} ${arc.controlY} ${arc.x2} ${height - 2}`}
+            fill="none"
+            stroke={color}
+            strokeWidth={arc.strokeWidth}
+            opacity={0.85}
+          />
+          {arc.showLabel && (
+            <text x={arc.midX} y={arc.peakY - 3} textAnchor="middle" fontSize={10} fill={color}>
+              {arc.junction.count}
+            </text>
+          )}
+        </g>
+      ))}
+    </>
+  );
 }
 
 function BamRenderer({

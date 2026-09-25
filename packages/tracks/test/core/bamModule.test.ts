@@ -43,9 +43,9 @@ function context(
 }
 beforeEach(() => vi.resetAllMocks());
 describe("BAM module public contract", () => {
-  it("registers all four displays, applies defaults, and validates updates", () => {
+  it("registers every display, applies defaults, and validates updates", () => {
     expect(firstPartyTrackModules).toContain(bamModule);
-    expect(bamModule.displays).toEqual(["dense", "squish", "pack", "full"]);
+    expect(bamModule.displays).toEqual(["coverage", "sashimi", "dense", "squish", "pack", "full"]);
     const track = bamModule.create(input);
     expect(track).toMatchObject({
       type: "bam",

@@ -3,7 +3,12 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { bamModule, type BamRecord, type BamData } from "@weng-lab/genomebrowser-tracks/bam";
+import {
+  bamModule,
+  computeCoverageRuns,
+  type BamRecord,
+  type BamData,
+} from "@weng-lab/genomebrowser-tracks/bam";
 import { BamTooltip } from "../../src/bam/tooltip";
 
 const hooks = vi.hoisted(() => ({
@@ -66,6 +71,8 @@ function markup(display: string, data: BamData, overrides: Partial<typeof props>
   );
   return element;
 }
+/** Displays that draw one glyph per read, as opposed to aggregating them. */
+const PILEUP_DISPLAYS: string[] = ["dense", "squish", "pack", "full"];
 beforeEach(() => vi.clearAllMocks());
 describe("BAM displays", () => {
   it("uses the configurable visible span for letters independently of width and overscan", () => {
@@ -108,9 +115,13 @@ describe("BAM displays", () => {
         expect(result.querySelectorAll("[data-bam-read]")).toHaveLength(0);
       }
       const visibleRegion = { ...region, end: 49999 };
-      expect(
-        markup(display, data, { region, visibleRegion }).querySelectorAll("[data-bam-read]"),
-      ).toHaveLength(1);
+      // Only the pileup displays draw one glyph per read; coverage and sashimi
+      // aggregate them, so they are covered by their own cases below.
+      if (PILEUP_DISPLAYS.includes(display)) {
+        expect(
+          markup(display, data, { region, visibleRegion }).querySelectorAll("[data-bam-read]"),
+        ).toHaveLength(1);
+      }
       const result = markup(display, data, {
         region,
         visibleRegion,
@@ -119,6 +130,51 @@ describe("BAM displays", () => {
       expect(result.textContent).toContain("Zoom in to see BAM track");
       expect(result.querySelectorAll("[data-bam-read]")).toHaveLength(0);
     }
+  });
+  const spliced = (overrides: Partial<BamRecord> = {}) =>
+    read({
+      start: 100,
+      end: 300,
+      cigar: [
+        { op: "M", length: 50, sequenceOffset: 0, referenceOffset: 0 },
+        { op: "N", length: 100, sequenceOffset: 50, referenceOffset: 50 },
+        { op: "M", length: 50, sequenceOffset: 50, referenceOffset: 150 },
+      ],
+      ...overrides,
+    });
+  it("tallies junctions across reads and labels each arc with its read count", () => {
+    const region = { chromosome: "chr1", start: 0, end: 400 };
+    const data = {
+      records: [spliced(), spliced({ readName: "b" }), spliced({ readName: "c" })],
+      reference: [],
+    };
+    const result = markup("sashimi", data, { region, visibleRegion: region });
+    const arcs = result.querySelectorAll("[data-junction]");
+    // Three reads share one junction, so one arc carries a count of three.
+    expect(arcs).toHaveLength(1);
+    expect(arcs[0]?.getAttribute("data-junction")).toBe("3");
+    expect(result.textContent).toContain("3");
+  });
+  it("drops junctions below the configured read-count floor", () => {
+    const region = { chromosome: "chr1", start: 0, end: 400 };
+    const data = { records: [spliced()], reference: [] };
+    const result = markup("sashimi", data, {
+      region,
+      visibleRegion: region,
+      config: { ...props.config, minJunctionReads: 2 },
+    });
+    expect(result.querySelectorAll("[data-junction]")).toHaveLength(0);
+  });
+  it("draws depth from aligned blocks only, so an intron reads as uncovered", () => {
+    const region = { chromosome: "chr1", start: 0, end: 400 };
+    const data = { records: [spliced()], reference: [] };
+    expect(computeCoverageRuns(data.records, region)).toEqual([
+      { kind: "value", chromosome: "chr1", start: 100, end: 150, value: 1 },
+      { kind: "value", chromosome: "chr1", start: 250, end: 300, value: 1 },
+    ]);
+    expect(
+      markup("coverage", data, { region, visibleRegion: region }).querySelectorAll("path"),
+    ).toHaveLength(1);
   });
 
   const records = [

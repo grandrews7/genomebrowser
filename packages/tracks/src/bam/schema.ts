@@ -13,5 +13,10 @@ export const bamConfigSchema = z.object({
   reverseColor: hexColorSchema.default("#cc3333"),
   minimumMappingQuality: z.number().int().min(0).max(254).default(0),
   showDuplicates: z.boolean().default(true),
+  coverageColor: hexColorSchema.default("#3a6ea5"),
+  /** Junctions supported by fewer reads than this are not drawn. */
+  minJunctionReads: z.number().int().min(1).default(1),
+  /** Drops arcs wider than this, which are usually misalignments rather than splices. */
+  maxJunctionSpan: z.number().int().positive().optional(),
 });
 export type BamConfig = z.output<typeof bamConfigSchema>;
