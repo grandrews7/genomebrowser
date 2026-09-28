@@ -16,11 +16,11 @@ The genomic span currently visible in the browser, also called the **visible reg
 
 ### Render region
 
-The genomic span prepared for drawing, including **overscan**, the extra coverage beyond the viewport used during panning. A renderer positions its data using the region and width supplied with that data. The visible region can differ from this render region.
+The genomic span prepared for drawing, including **overscan**, the extra coverage beyond the viewport used during panning. Each track has its own render region, the span its current data covers, so tracks can differ while one is still loading. A renderer positions its data using the region and width supplied with that data. The visible region can differ from this render region.
 
 ### Overscan
 
-The extra genomic coverage prepared beyond the viewport’s edges, allowing existing track content to move into view immediately during panning while new data loads.
+The extra genomic coverage prepared beyond the viewport’s edges, allowing existing track content to move into view immediately during panning while new data loads. A drag stops where a track’s overscan ends, and a pan that leaves at least half a viewport of overscan on each side needs no new request.
 
 > viewport = visible coverage; render region = viewport plus overscan.
 
@@ -41,6 +41,10 @@ The reusable implementation of a track type. Its **fetcher** produces data for a
 ### Display mode
 
 A module-supported way to draw a track's data, selected by `base.display`. Each mode has a renderer. Use display mode for a visualization choice, and collection view for a way of organizing a catalog.
+
+### Base-pair detail
+
+Per-base content such as ruler reference letters, BAM sequence letters, or dynseq nucleotide glyphs. The browser's **base-pair detail gate** combines a configurable visible-span cutoff with a width guard. Fetch demand reports eligibility from the bp cutoff; renderers use `useBasePairDetail` for the width-aware decision. The width guard has separate entry and exit thresholds to avoid repeated switching during small resizes.
 
 ### Track configuration
 
@@ -81,7 +85,7 @@ The region and logical drawing width core asks a track's fetcher to satisfy. A d
 
 ### Track resources
 
-Reusable values retained between fetches for one track type and ID in one browser instance, such as a file reader or cache. Resources are separate from track configuration and the current fetch result. The fetcher manages their validity when sources change; removing the track or unmounting the browser releases core's references to them.
+Reusable values retained between fetches for one track type and ID in one browser instance, such as a file reader or cache. Resources are separate from track configuration and the current fetch result. The fetcher manages their validity when sources change; removing the track, replacing either application-owned store, or unmounting the browser releases core's references to them.
 
 ## Testing
 

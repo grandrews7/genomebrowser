@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTrackStore, hg38, type TrackResources } from "@weng-lab/genomebrowser";
 import { rulerModule, type RulerData } from "@weng-lab/genomebrowser-tracks/ruler";
-import { TrackHeightContext } from "../../../core/src/browser/track-row/trackHeightContext";
+import { TestBrowser } from "../testBrowser";
 import { tickStep } from "../../src/ruler/helpers";
 const { read, createFile } = vi.hoisted(() => ({ read: vi.fn(), createFile: vi.fn() }));
 vi.mock("../../src/ruler/useRulerHoverHighlight", () => ({
@@ -37,13 +37,15 @@ function render(
     ...input,
     config: {
       sequenceUrl: sequenceUrl ?? undefined,
-      sequenceMinPixelsPerBase: 5,
       distinguishMaskedBases,
     },
   });
   const Renderer = rulerModule.render.full;
   return renderToStaticMarkup(
-    <TrackHeightContext value={{ getTrackHeight: () => 22, updateHeight: () => ({ ok: true }) }}>
+    <TestBrowser
+      basePairDetail
+      trackStore={createTrackStore({ modules: [rulerModule], tracks: [track] })}
+    >
       <svg>
         <Renderer
           {...track.base}
@@ -54,7 +56,7 @@ function render(
           data={data}
         />
       </svg>
-    </TrackHeightContext>,
+    </TestBrowser>,
   );
 }
 describe("ruler module", () => {
@@ -66,10 +68,6 @@ describe("ruler module", () => {
     ).toThrow();
     expect(track.base.height).toBe(22);
     expect(track.config.distinguishMaskedBases).toBe(false);
-    expect(track.config.sequenceMinPixelsPerBase).toBe(15);
-    expect(() =>
-      rulerModule.create({ ...input, config: { sequenceMinPixelsPerBase: 0 } }),
-    ).toThrow();
     expect(() =>
       rulerModule.create({ ...input, config: { sequenceUrl: "file:///ref.2bit" } }),
     ).toThrow();
@@ -94,11 +92,6 @@ describe("ruler module", () => {
     expect(masked).toContain('aria-label="chr1:105 a"');
     expect(masked).toContain('aria-label="chr1:100 A"');
     expect(masked).toContain('fill="#228b22"');
-    expect(render(1000, data, url, 200)).toContain('aria-label="chr1:100 A"');
-    expect(render(2000, data, url, 400)).toContain('aria-label="chr1:100 A"');
-    expect(render(999, data, url, 200)).not.toContain('aria-label="chr1:100 A"');
-    expect(render(1999, data, url, 400)).not.toContain('aria-label="chr1:100 A"');
-    expect(render(999, data, url, 200)).not.toContain("Zoom in");
     expect(render(120, data)).toContain('aria-label="chr1:109 N"');
     expect(render(120, { records: [], error: "CORS" })).toContain("Reference sequence unavailable");
   });
@@ -114,19 +107,25 @@ describe("ruler module", () => {
             display: "full",
           },
           type: "ruler",
-          config: { ...rulerModule.create(input).config, sequenceUrl, sequenceMinPixelsPerBase: 5 },
+          config: { ...rulerModule.create(input).config, sequenceUrl },
         },
-        demand: { region: { ...region, end: region.start + viewportSpan }, width, assembly: hg38 },
+        demand: {
+          basePairDetail: viewportSpan <= 100,
+          region: { ...region, end: region.start + viewportSpan },
+          visibleRegion: { ...region, end: region.start + viewportSpan },
+          width,
+          assembly: hg38,
+        },
         resources: cached,
       });
     await fetch(1000);
     await fetch(999, url, 200);
     expect(createFile).not.toHaveBeenCalled();
     expect(await fetch(120, url)).toMatchObject({ records: [{ sequence: "ACGTNacgtn" }] });
-    await fetch(1000, url, 200);
-    expect(read).toHaveBeenCalledWith({ ...region, end: 300 });
-    await fetch(2000, url, 400);
-    expect(read).toHaveBeenCalledWith({ ...region, end: 500 });
+    await fetch(1000, url, 80);
+    expect(read).toHaveBeenCalledWith({ ...region, end: 180 }, { signal: undefined });
+    await fetch(2000, url, 90);
+    expect(read).toHaveBeenCalledWith({ ...region, end: 190 }, { signal: undefined });
     await fetch(119, url);
     expect(createFile).toHaveBeenCalledTimes(1);
     await fetch(240, "https://example.test/other.2bit");
@@ -134,5 +133,27 @@ describe("ruler module", () => {
     read.mockRejectedValueOnce(new Error("range access denied"));
     expect(await fetch(120, url)).toEqual({ records: [], error: "range access denied" });
     expect((await fetch(120, url)).records).toHaveLength(1);
+  });
+  it("passes the abort signal to the reader and rethrows aborted reads", async () => {
+    const controller = new AbortController();
+    const abortError = new DOMException("Aborted", "AbortError");
+    read.mockImplementationOnce(async () => {
+      controller.abort();
+      throw abortError;
+    });
+    createFile.mockReturnValue({ read });
+    const request = rulerModule.fetch({
+      track: {
+        base: { id: "ruler", display: "full" },
+        type: "ruler",
+        config: { ...rulerModule.create(input).config, sequenceUrl: url },
+      },
+      demand: { basePairDetail: true, region, visibleRegion: region, width: 1000, assembly: hg38 },
+      resources: resources(),
+      signal: controller.signal,
+    });
+
+    await expect(request).rejects.toBe(abortError);
+    expect(read).toHaveBeenLastCalledWith(region, { signal: controller.signal });
   });
 });

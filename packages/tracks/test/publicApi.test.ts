@@ -1,7 +1,7 @@
+import { bamModule } from "@weng-lab/genomebrowser-tracks/bam";
 import { describe, expect, expectTypeOf, it } from "vitest";
 import { validateTrackCollection, type TrackInteraction } from "@weng-lab/genomebrowser";
 import type {
-  BamRecord,
   BigWigRecord,
   BigWigSummaryRecord,
   BigWigValueRecord,
@@ -12,12 +12,6 @@ import {
   type DynseqConfig,
   type DynseqCreateInput,
 } from "@weng-lab/genomebrowser-tracks/dynseq";
-import {
-  bamModule,
-  type BamConfig,
-  type BamCreateInput,
-  type BamData,
-} from "@weng-lab/genomebrowser-tracks/bam";
 import { firstPartyTrackModules } from "@weng-lab/genomebrowser-tracks";
 import {
   bigBedModule,
@@ -59,10 +53,9 @@ import {
 import { condenseSignalRecords, type SignalPoint } from "@weng-lab/genomebrowser-tracks/shared";
 
 describe("first-party track package", () => {
-  it("exports all ten pre-bound modules as a ready-made collection", () => {
+  it("exports all nine pre-bound modules as a ready-made collection", () => {
     expect(firstPartyTrackModules).toEqual([
       rulerModule,
-      bamModule,
       dynseqModule,
       bigBedModule,
       bigWigModule,
@@ -71,10 +64,10 @@ describe("first-party track package", () => {
       ccreBigBedModule,
       geneModule,
       methylCModule,
+      bamModule,
     ]);
     expect(firstPartyTrackModules.map((module) => module.type)).toEqual([
       "ruler",
-      "bam",
       "dynseq",
       "bigbed",
       "bigwig",
@@ -83,6 +76,7 @@ describe("first-party track package", () => {
       "ccre-bigbed",
       "gene",
       "methylc",
+      "bam",
     ]);
     for (const module of firstPartyTrackModules) {
       expect(module.configSchema).toBeDefined();
@@ -148,9 +142,6 @@ describe("first-party track package", () => {
   });
 
   it("derives create-input and validated config types from each module", () => {
-    expectTypeOf<BamCreateInput>().toEqualTypeOf<Parameters<typeof bamModule.create>[0]>();
-    expectTypeOf<BamConfig>().toEqualTypeOf<ReturnType<typeof bamModule.validate>["config"]>();
-    expectTypeOf<BamData>().toEqualTypeOf<BamRecord[]>();
     expectTypeOf<DynseqCreateInput>().toEqualTypeOf<Parameters<typeof dynseqModule.create>[0]>();
     expectTypeOf<DynseqConfig>().toEqualTypeOf<
       ReturnType<typeof dynseqModule.validate>["config"]

@@ -83,10 +83,10 @@ assertJsonEqual(
   declarationExports.typeNames,
   [
     "BamCigarOperation",
-    "BamCigarSegment",
     "BamFile",
     "BamFileOptions",
     "BamHeader",
+    "BamMate",
     "BamRecord",
     "BamReference",
     "BigBedFile",

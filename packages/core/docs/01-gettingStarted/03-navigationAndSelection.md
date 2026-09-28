@@ -8,17 +8,19 @@ The browser starts in pan mode. Panning moves the view along the current chromos
 
 | Input                | Behavior                                                                                                         |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Mouse drag           | Drag anywhere on the track row to pan. Drag left toward higher coordinates or right toward lower coordinates.    |
+| Mouse drag           | Drag the track data or title area to pan. Drag left toward higher coordinates or right toward lower coordinates. |
 | Horizontal scrolling | Use a trackpad or side-scrolling mouse. Scroll right toward higher coordinates or left toward lower coordinates. |
-| Touch                | Swipe the track row horizontally to pan or vertically to scroll the page.                                        |
+| Touch                | Swipe the track data or title area horizontally to pan or vertically to scroll the page.                         |
 
 Trackpad gestures that move more vertically than horizontally scroll the page.
 
-During a pan, existing track content moves immediately while the browser requests data for the new region. Core temporarily blocks track interactions until the data has loaded and matches its position on screen. Hovering and clicking then resume.
+If the browser cancels a drag or its window loses focus, the track content returns to the current region. During a pan, existing track content moves immediately. Each track has data loaded beyond both edges of the view, and a drag stops where that data ends, so a pan never shows empty space. After a pan, tracks running short of data request more and show it as it arrives. Core blocks track interactions until every track has loaded. Hovering and clicking then resume. Application controls outside the browser are not blocked; read the store's [`isLoading`](../03-reference/01-browserSetup/browserStore.md#isloading) to disable them for the same period.
 
 ## Reorder tracks
 
 Drag the left margin to lift and reorder an unpinned track, then release to drop it. No long press is needed. The margin reserves touch gestures for reordering, and the desktop cursor stays in the grabbing state until the reorder ends.
+
+Open a track's settings and select the outlined **Pin track** button beside Close to place it below the existing pinned tracks. The pin fills when active. Select **Unpin track** to return the track to the beginning of the unpinned group. Pinning fixes track order, not scroll position; pinned tracks cannot be dragged or moved with the margin's ordering controls. The pin button is disabled while tracks load and is available for tracks with settings.
 
 ## Navigate to a region
 

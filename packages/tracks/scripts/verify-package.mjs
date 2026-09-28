@@ -18,13 +18,13 @@ const trackNames = [
   "ruler",
 ];
 const expectedRuntimeExports = new Map([
+  ["./bam", ["bamModule"]],
   ["./ruler", ["rulerModule"]],
-  ["./bam", ["bamModule", "computeCoverageRuns", "computeJunctions"]],
   ["./bigbed", ["bigBedModule", "fetchBigBedRows"]],
-  ["./dynseq", ["dynseqModule", "NUCLEOTIDE_COLORS", "NUCLEOTIDE_GLYPHS"]],
   ["./bigwig", ["bigWigModule"]],
   ["./bulkbed", ["bulkBedModule"]],
   ["./cave", ["caveModule"]],
+  ["./dynseq", ["dynseqModule", "NUCLEOTIDE_COLORS", "NUCLEOTIDE_GLYPHS"]],
   ["./ccre", ["ccreBigBedModule"]],
   ["./gene", ["geneModule", "getGeneDatasetsForAssembly", "getGeneDatasetTitle"]],
   ["./methylc", ["methylCModule"]],

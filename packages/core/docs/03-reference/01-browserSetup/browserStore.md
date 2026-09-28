@@ -36,6 +36,7 @@ Use `subscribe(listener)` for external subscriptions and unsubscribe when their 
 | -------------------- | ------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | `assembly`           | `AssemblyDefinition`      | Required                                              | Sequence names and bounds, fixed for this store's lifetime.                            |
 | `region`             | `GenomicRegion`           | Required                                              | Initial zero-based, half-open visible region. Supply an object; parse text explicitly. |
+| `basePairDetail`     | `BasePairDetailSettings`  | `{ maxVisibleBases: 100 }`                            | Inclusive viewport cutoff in bp for nucleotide detail.                                 |
 | `marginWidth`        | `number`                  | `50`                                                  | Positive finite left gutter width in logical SVG units.                                |
 | `trackWidth`         | `number`                  | `1000`                                                | Positive finite track width for fixed sizing, excluding the margin.                    |
 | `fontSize`           | `number`                  | `10`                                                  | Positive finite font size in logical SVG units.                                        |
@@ -48,9 +49,34 @@ Responsive views measure their own width and do not write that measurement into 
 
 ## BrowserStore and BrowserStoreInstance
 
-`BrowserStore` contains all fields in the input table as initialized state: `assembly`, normalized `region`, `marginWidth`, `trackWidth`, `fontSize`, `titleSize`, `highlights`, `selectionMode`, and `selectionHighlight`. Input defaults are resolved, so these state fields are present. It also contains the actions below.
+`BrowserStore` contains all fields in the input table as initialized state: `assembly`, normalized `region`, `basePairDetail`, `marginWidth`, `trackWidth`, `fontSize`, `titleSize`, `highlights`, `selectionMode`, and `selectionHighlight`. Input defaults are resolved, so these state fields are present. It also contains `isLoading` and the actions below.
 
 `assembly` is readonly; the public action API has no assembly, margin, or typography setter.
+
+### isLoading
+
+`isLoading` is `true` while a mounted browser is loading track data, and `false` otherwise, including before a browser mounts. The browser blocks its own pointer interaction for the same period. It sets the value in the same store update as the region change that starts the requests, so a control reading it disables before the next paint. The browser owns this field: it is readonly, not accepted as input, and not meant to be set by the application.
+
+Read it to disable application controls until the browser has settled:
+
+```tsx
+function NextRegionButton() {
+  const isLoading = useBrowserStore((state) => state.isLoading);
+  const region = useBrowserStore((state) => state.region);
+  const setRegion = useBrowserStore((state) => state.setRegion);
+  const span = region.end - region.start;
+  return (
+    <button
+      disabled={isLoading}
+      onClick={() => setRegion({ ...region, start: region.end, end: region.end + span })}
+    >
+      Next
+    </button>
+  );
+}
+```
+
+Two browsers mounted with the same browser store both write `isLoading`, so the value can clear while one of them is still loading.
 
 `BrowserStoreInstance` is `UseBoundStore<StoreApi<BrowserStore>>`, the Zustand hook plus its imperative store API.
 
@@ -114,6 +140,21 @@ type Result =
 ```
 
 `BrowserRegionMutationErrorCode` includes every [RegionErrorCode](../02-assembliesAndRegions/regions.md#regionresult-and-regionerrorcode), plus `INVALID_ZOOM_FACTOR` and `INVALID_ZOOM_CENTER`. Even a finite zoom factor can produce an invalid coordinate if the calculated region overflows. Expected navigation failures return a result and leave state unchanged.
+
+## Base-pair detail
+
+`BasePairDetailSettings` is `{ maxVisibleBases: number }`. The cutoff must be a positive integer; it defaults to 100 bp. It measures the visible region, excluding overscan. Invalid construction input throws.
+
+`setBasePairDetail(settings: BasePairDetailSettings): BasePairDetailMutationResult` replaces the settings and updates all mounted browsers using this store. A change in eligibility refreshes track demand without requiring a region change.
+
+```ts
+const result = useBrowserStore.getState().setBasePairDetail({ maxVisibleBases: 200 });
+if (!result.ok) console.error(result.error);
+```
+
+`BasePairDetailMutationResult` is `{ ok: true }` or `{ ok: false; code: "INVALID_BASE_PAIR_DETAIL"; error: string }`. Invalid updates leave state unchanged.
+
+Renderers use [useBasePairDetail](../04-rendererIntegration/useBasePairDetail.md), which also applies a shared width guard with separate entry and exit thresholds. The store holds the bp cutoff; each mounted browser owns its actual width and resulting decision. The hook reference documents resizing, scale, and fetching behavior.
 
 ## Fixed width
 

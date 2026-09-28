@@ -140,12 +140,6 @@
                   "sequenceUrl": {
                     "type": "string",
                     "format": "uri"
-                  },
-                  "sequenceMinPixelsPerBase": {
-                    "default": 15,
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 100
                   }
                 },
                 "additionalProperties": false
@@ -195,133 +189,17 @@
                     "minLength": 1
                   },
                   "display": {
-                    "default": "coverage",
-                    "type": "string",
-                    "enum": ["coverage", "pileup", "sashimi"]
-                  },
-                  "height": {
-                    "default": 180,
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "color": {
-                    "default": "#5b8bd0",
-                    "type": "string",
-                    "pattern": "^#[0-9a-f]{6}$"
-                  }
-                },
-                "required": ["id", "title"],
-                "additionalProperties": false
-              },
-              "config": {
-                "type": "object",
-                "properties": {
-                  "url": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "indexUrl": {
-                    "type": "string"
-                  },
-                  "maxBases": {
-                    "default": 25000,
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "minMappingQuality": {
-                    "default": 0,
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "maxReads": {
-                    "default": 400,
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "minJunctionReads": {
-                    "default": 1,
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991
-                  },
-                  "maxJunctionSpan": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "coverageColor": {
-                    "default": "#3a6ea5",
-                    "type": "string",
-                    "pattern": "^#[0-9a-f]{6}$"
-                  },
-                  "reverseStrandColor": {
-                    "default": "#d08b5b",
-                    "type": "string",
-                    "pattern": "^#[0-9a-f]{6}$"
-                  }
-                },
-                "required": ["url"],
-                "additionalProperties": false
-              },
-              "type": {
-                "type": "string",
-                "const": "bam"
-              },
-              "metadata": {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "number"
-                    },
-                    {
-                      "type": "boolean"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                }
-              }
-            },
-            "required": ["base", "config", "type"],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "base": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "title": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "display": {
                     "default": "full",
                     "type": "string",
-                    "enum": ["full"]
+                    "enum": ["full", "dense"]
                   },
                   "height": {
-                    "default": 100,
+                    "default": 80,
                     "type": "number",
                     "exclusiveMinimum": 0
                   },
                   "color": {
-                    "default": "#3a6ea5",
+                    "default": "#2266aa",
                     "type": "string",
                     "pattern": "^#[0-9a-f]{6}$"
                   }
@@ -335,21 +213,34 @@
                   "url": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "fillWithZero": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "yRange": {
+                    "type": "object",
+                    "properties": {
+                      "min": {
+                        "type": "number"
+                      },
+                      "max": {
+                        "type": "number"
+                      }
+                    }
+                  },
+                  "showClampIndicators": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "clampIndicatorColor": {
+                    "default": "#ff0000",
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$"
                   },
                   "twoBitUrl": {
                     "type": "string",
                     "minLength": 1
-                  },
-                  "minPixelsPerBase": {
-                    "default": 3,
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "maxLetterBases": {
-                    "default": 500,
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
                   }
                 },
                 "required": ["url", "twoBitUrl"],
@@ -1125,6 +1016,239 @@
               "type": {
                 "type": "string",
                 "const": "methylc"
+              },
+              "metadata": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "required": ["base", "config", "type"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "base": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "display": {
+                    "default": "pack",
+                    "type": "string",
+                    "enum": ["dense", "squish", "pack", "full"]
+                  },
+                  "height": {
+                    "default": 14,
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "color": {
+                    "default": "#3366cc",
+                    "type": "string",
+                    "pattern": "^#[0-9a-f]{6}$"
+                  }
+                },
+                "required": ["id", "title"],
+                "additionalProperties": false
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "indexUrl": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sequenceUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "maxWindow": {
+                    "default": 50000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000
+                  },
+                  "filters": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "minimumMappingQuality": {
+                        "default": 0,
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 254
+                      },
+                      "includeDuplicates": {
+                        "default": true,
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "alignments": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "show": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "rowHeight": {
+                        "default": 14,
+                        "type": "number",
+                        "minimum": 1
+                      },
+                      "forwardColor": {
+                        "default": "#3366cc",
+                        "type": "string",
+                        "pattern": "^#[0-9a-f]{6}$"
+                      },
+                      "reverseColor": {
+                        "default": "#cc3333",
+                        "type": "string",
+                        "pattern": "^#[0-9a-f]{6}$"
+                      },
+                      "maxRows": {
+                        "default": 100,
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      }
+                    }
+                  },
+                  "coverage": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "show": {
+                        "default": true,
+                        "type": "boolean"
+                      },
+                      "height": {
+                        "default": 60,
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 1000
+                      },
+                      "color": {
+                        "default": "#808080",
+                        "type": "string",
+                        "pattern": "^#[0-9a-f]{6}$"
+                      },
+                      "scale": {
+                        "default": {
+                          "mode": "auto"
+                        },
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "mode": {
+                                "type": "string",
+                                "const": "auto"
+                              }
+                            },
+                            "required": ["mode"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "mode": {
+                                "type": "string",
+                                "const": "fixed"
+                              },
+                              "max": {
+                                "type": "number",
+                                "exclusiveMinimum": 0
+                              }
+                            },
+                            "required": ["mode", "max"]
+                          }
+                        ]
+                      },
+                      "graph": {
+                        "default": "bars",
+                        "type": "string",
+                        "enum": ["bars", "line"]
+                      },
+                      "aggregation": {
+                        "default": "mean",
+                        "type": "string",
+                        "enum": ["mean", "max"]
+                      }
+                    }
+                  },
+                  "junctions": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "show": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "height": {
+                        "default": 100,
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 1000
+                      },
+                      "color": {
+                        "default": "#808080",
+                        "type": "string",
+                        "pattern": "^#[0-9a-f]{6}$"
+                      },
+                      "minimumSupport": {
+                        "default": 1,
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "maximumSpan": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9007199254740991
+                      },
+                      "showCounts": {
+                        "default": true,
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "required": ["url", "indexUrl"],
+                "additionalProperties": false
+              },
+              "type": {
+                "type": "string",
+                "const": "bam"
               },
               "metadata": {
                 "type": "object",

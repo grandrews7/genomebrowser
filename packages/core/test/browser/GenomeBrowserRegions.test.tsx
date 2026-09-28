@@ -123,7 +123,9 @@ describe("GenomeBrowser region windows", () => {
       expect.objectContaining({
         track: { base: { id: "bounded", display: "full" }, type: "bounded-fetch-test", config: {} },
         demand: {
+          basePairDetail: true,
           assembly: browserStore.getState().assembly,
+          visibleRegion: browserStore.getState().region,
           region: { chromosome: "chr1", start: 0, end: 200 },
           width: 200,
         },
@@ -143,7 +145,9 @@ describe("GenomeBrowser region windows", () => {
       expect.objectContaining({
         track: { base: { id: "bounded", display: "full" }, type: "bounded-fetch-test", config: {} },
         demand: {
+          basePairDetail: true,
           assembly: browserStore.getState().assembly,
+          visibleRegion: browserStore.getState().region,
           region: { chromosome: "chr1", start: 300, end: 600 },
           width: 300,
         },
@@ -166,7 +170,9 @@ describe("GenomeBrowser region windows", () => {
       expect.objectContaining({
         track: { base: { id: "bounded", display: "full" }, type: "bounded-fetch-test", config: {} },
         demand: {
+          basePairDetail: true,
           assembly: browserStore.getState().assembly,
+          visibleRegion: browserStore.getState().region,
           region: { chromosome: "chr1", start: 300, end: 600 },
           width: 600,
         },
@@ -195,7 +201,9 @@ describe("GenomeBrowser region windows", () => {
       expect.objectContaining({
         track: { base: { id: "bounded", display: "full" }, type: "bounded-fetch-test", config: {} },
         demand: {
+          basePairDetail: true,
           assembly: browserStore.getState().assembly,
+          visibleRegion: browserStore.getState().region,
           region: { chromosome: "chr1", start: 800, end: 1_000 },
           width: 400,
         },
@@ -203,7 +211,7 @@ describe("GenomeBrowser region windows", () => {
     );
   });
 
-  it("unlocks a clamped pan when the normalized fetch window is unchanged", async () => {
+  it("stops a drag at the chromosome edge instead of shortening the view", async () => {
     vi.useFakeTimers();
     const fetch = vi.fn(async () => null);
     function Renderer({ width }: { width: number }) {
@@ -253,11 +261,12 @@ describe("GenomeBrowser region windows", () => {
       await vi.advanceTimersByTimeAsync(200);
     });
 
-    expect(browserStore.getState().region).toEqual({ chromosome: "chr1", start: 0, end: 800 });
-    expect(fetch).toHaveBeenCalledTimes(2);
+    // The whole chromosome is already visible, so the drag cannot move at all.
+    expect(browserStore.getState().region).toEqual({ chromosome: "chr1", start: 0, end: 1_000 });
+    expect(fetch).toHaveBeenCalledOnce();
     expect(container?.querySelector('[role="status"]')).toBeNull();
     expect(container?.querySelector('[data-testid="render-width"]')?.getAttribute("width")).toBe(
-      "125",
+      "100",
     );
   });
 

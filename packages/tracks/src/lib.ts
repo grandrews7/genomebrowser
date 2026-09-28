@@ -11,7 +11,6 @@ import { methylCModule } from "./methylc";
 
 export const firstPartyTrackModules = [
   rulerModule,
-  bamModule,
   dynseqModule,
   bigBedModule,
   bigWigModule,
@@ -20,4 +19,5 @@ export const firstPartyTrackModules = [
   ccreBigBedModule,
   geneModule,
   methylCModule,
+  bamModule,
 ] as const;

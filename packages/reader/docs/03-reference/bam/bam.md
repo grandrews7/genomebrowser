@@ -1,150 +1,98 @@
-# BAM alignments
+# BAM reader
 
-Use `createBamFile` to read sequence alignments from a public HTTP(S) BAM file and its BAI index.
-The reader fetches only the compressed blocks the index says overlap each region, so payload scales
-with the window rather than the file.
+Read alignments from a coordinate-sorted, BGZF-compressed BAM file with its matching BAI index. Import all APIs from `@weng-lab/genomic-reader`.
 
-## Read alignments
-
-Create a reusable file object, then read a zero-based, half-open region:
+## Usage
 
 ```ts
 import { createBamFile } from "@weng-lab/genomic-reader";
 
-const file = createBamFile({ url: "YOUR_URL_HERE" });
-const records = await file.read({ chromosome: "chr12", start: 120978543, end: 121002512 });
+const file = createBamFile({
+  url: "YOUR_URL_HERE",
+  indexUrl: "YOUR_URL_HERE",
+});
+const records = await file.read({
+  chromosome: "21",
+  start: 33_019_935,
+  end: 33_021_000,
+});
 ```
 
-Each record carries its interval plus the alignment fields:
+Supply separate BAM and BAI URLs. Exact sequence names take priority. If an exact name is absent, the reader tries adding or removing the case-sensitive `chr` prefix. Thus `chr20` can read a BAM reference named `20`, and vice versa. Returned alignments and mates on the queried reference use the requested spelling; mates on other references retain their BAM names. This does not convert genome assemblies or coordinates, and does not map `chrM` to `MT`. The region above corresponds to the UCSC BAM example, whose reference is named `21`, without a `chr` prefix.
+
+## createBamFile and BamFileOptions
 
 ```ts
-{
-  chromosome: "chr12",
-  start: 120978543,        // zero-based leftmost aligned base
-  end: 120978643,          // start plus the reference span of the CIGAR
-  name: "A00565:142:HL7TLDRXX:1:1166:28791:4445",
-  flag: 163,
-  mappingQuality: 60,
-  strand: "+",
-  cigar: [{ operation: "M", length: 100 }],
-  sequence: "CGGGCTCAGTGGCTCACGCCTGTAATCCCAGCACTTTGGG..."
-}
-```
-
-`end` is derived from the CIGAR operations that advance along the reference (`M`, `D`, `N`, `=`,
-`X`), so a spliced read spans its introns. Records are returned sorted by `start`.
-
-## The index
-
-The index defaults to the BAM URL with `.bai` appended. Pass `indexUrl` when it lives elsewhere:
-
-```ts
-createBamFile({ url: "YOUR_URL_HERE", indexUrl: "YOUR_URL_HERE" });
-```
-
-Only BAI is supported. CSI indexes, and the references longer than 512 Mbp that need them, are not
-yet read.
-
-## Reference names must match
-
-Names are matched exactly. A file whose header says `1` does not answer a query for `chr1`, and the
-read returns no records rather than failing, because a missing reference is normal when panning
-across assemblies. Read the header to discover what a file calls its references:
-
-```ts
-const header = await file.getHeader();
-header.references; // [{ name: "chr1", length: 248956422 }, ...]
-header.text; // the plain-text SAM header
-```
-
-## What is returned, and what is not
-
-- **Overlap, not containment.** A record whose alignment begins before the region is returned when
-  it reaches into it, including reads that span the region entirely through an `N` gap.
-- **Unmapped records are omitted.** They carry no interval to place, even when they sort into the
-  region through a mate's position.
-- **Secondary, supplementary, and duplicate records are returned.** Whether those belong in a view
-  is the caller's decision; test `flag` to filter them.
-- **Optional tags are not decoded.** Fields such as `NM` and `MD` are skipped.
-
-## Cost
-
-Everything in a window is decoded, so memory scales with the number of alignments, not the width of
-the region. A deeply covered gene can hold tens of thousands of records in a few kilobases. Bound
-the region before reading rather than reading and discarding.
-
-## Server requirements
-
-The host must support HTTP range requests, and cross-origin hosts must send permissive CORS headers
-including `Access-Control-Allow-Headers: range` and `Access-Control-Expose-Headers: content-range`.
-Both the BAM and its index are fetched, so both must be reachable.
-
-## Cancellation
-
-Pass an `AbortSignal` to cancel in-flight reads:
-
-```ts
-const controller = new AbortController();
-const records = await file.read(region, { signal: controller.signal });
-```
-
-The header and index are cached on the file object after the first successful read, so later reads
-of other regions fetch only alignment blocks.
-
-## Public types and methods
-
-Import all APIs here from `@weng-lab/genomic-reader`.
-
-```ts
-type BamFileOptions = { url: string; indexUrl?: string };
-type BamCigarOperation = "M" | "I" | "D" | "N" | "S" | "H" | "P" | "=" | "X";
-type BamCigarSegment = { operation: BamCigarOperation; length: number };
-type BamRecord = GenomicRecord & {
-  name: string;
-  flag: number;
-  mappingQuality: number;
-  strand: "+" | "-";
-  cigar: BamCigarSegment[];
-  sequence: string;
-};
-type BamReference = { name: string; length: number };
-type BamHeader = { text: string; references: BamReference[] };
-interface BamFile extends GenomicFile<BamRecord> {
-  read(region: GenomicRegion, options?: ReadOptions): Promise<BamRecord[]>;
-  getHeader(options?: ReadOptions): Promise<BamHeader>;
-}
-
+type BamFileOptions = { url: string; indexUrl: string };
 function createBamFile(options: BamFileOptions): BamFile;
 ```
 
-### createBamFile and BamFileOptions
+Both URLs are required HTTP(S) URLs and are validated synchronously. Creating the file performs no network access. BAM requests require HTTP 206 byte-range responses without a `Content-Encoding` header. BGZF is the file's compression format; HTTP decompression would invalidate its indexed byte offsets. The index is fetched in full with an HTTP 200 response. Both resources must allow browser access through CORS.
 
-`url` is required and must be an absolute HTTP(S) URL. `indexUrl` defaults to `url` with `.bai`
-appended. Invalid options or URLs throw synchronously; file contents are validated lazily by
-`read()`.
+Reuse the file object to retain the parsed reference dictionary and BAI index. Alignment records and compressed data are not retained between reads. Cancellation and failed requests do not prevent retrying.
 
-### BamFile and BamRecord
+## BamFile
 
-`read()` returns the alignments overlapping the region, sorted by `start`. `end` is derived from the
-CIGAR operations that advance along the reference, so a spliced record spans its introns. A region
-naming a reference the file does not contain returns an empty array rather than rejecting, because
-panning onto an unknown contig is ordinary. Coordinates must be finite nonnegative integers with
-`start < end`; invalid regions reject asynchronously.
+```ts
+interface BamFile extends GenomicFile<BamRecord> {
+  getHeader(options?: ReadOptions): Promise<BamHeader>;
+}
+```
 
-Header and index metadata are cached on the file object after the first successful read. HTTP,
-decoding, and abort failures reject rather than returning partial results.
+`read(region, options?)` follows the [regional file contract](../regionalReading/genomicFile.md). It returns mapped alignments overlapping the zero-based, half-open region, sorted by start and then end. Records retain their full coordinates and sequences. Overlap uses the reference span from CIGAR, including deletions and skipped regions. A mapped record consuming no reference bases occupies one base for overlap.
 
-### The header
+Missing sequence names, regions beyond a sequence's length, and regions without alignments return an empty array. Unmapped records are omitted; secondary, supplementary, duplicate, and quality-failed alignments remain available through their flags.
 
-`getHeader()` returns the plain-text SAM header and the reference list in file order. Read it to
-discover what a file calls its references before querying, since names are matched exactly.
+Coordinates must be nonnegative integers with start before end. BAI queries must end at or before `2 ** 29`. Validation, HTTP failures, invalid/truncated binary data, and cancellation reject the read without returning partial records. Each call accepts its own optional `AbortSignal`; aborting one call does not cancel concurrent calls.
 
-### CIGAR
+A read requests the BAM byte ranges its index chunks point to. Chunks less than 32 KiB apart share one request, and up to eight requests run at once. Aborting the read, or any request failing, cancels the requests still running.
 
-`cigar` preserves the operations in file order. `M`, `D`, `N`, `=`, and `X` advance along the
-reference; `I`, `S`, `H`, and `P` do not.
+## BamHeader and BamReference
 
-## Related reference
+`getHeader({ signal }?)` returns `{ text: string, references: BamReference[] }`. `text` is the SAM header text; each reference contains `name: string` and `length: number`, in file order. Names retain their original spelling, even after reads using the `chr` fallback.
 
-[Shared regional contract](../regionalReading/genomicFile.md) · [BAM alignments index](README.md) ·
-[All reader APIs](../README.md)
+```ts
+const controller = new AbortController();
+const header = await file.getHeader({ signal: controller.signal });
+console.log(header.text, header.references);
+```
+
+The header is validated and cached after a successful load, shared with `read()`. Header access does not fetch the BAI. Each call returns a defensive copy of the reference list. Pre-aborted and in-flight calls reject, including requests served from the cache. Aborting one caller does not cancel other callers or prevent retrying. Malformed headers reject without caching partial results.
+
+## BamRecord
+
+| Field            | Type                  | Meaning                                                              |
+| ---------------- | --------------------- | -------------------------------------------------------------------- |
+| `chromosome`     | `string`              | Requested reference name, after optional prefix matching.            |
+| `start`, `end`   | `number`              | Full zero-based, half-open reference span.                           |
+| `readName`       | `string`              | BAM query name.                                                      |
+| `flags`          | `number`              | Raw SAM bit flags.                                                   |
+| `strand`         | `"+"` or `"-"`        | Alignment orientation from flag 0x10.                                |
+| `mappingQuality` | `number`              | Raw MAPQ; 255 means unavailable.                                     |
+| `cigar`          | `BamCigarOperation[]` | Operations in stored order; empty when unavailable.                  |
+| `sequence`       | `string`              | Stored BAM sequence, including IUPAC bases; empty if absent.         |
+| `phredQualities` | `number[]` or `null`  | Per-base Phred scores, or null when unavailable/absent.              |
+| `mate`           | `BamMate` or `null`   | Mate reference information, or null when the reference ID is absent. |
+| `templateLength` | `number`              | Signed template length.                                              |
+
+Reverse-strand sequences are returned as stored in BAM, without another reverse complement. Auxiliary tags are not exposed.
+
+## BamCigarOperation
+
+Each operation contains `op` (`M`, `I`, `D`, `N`, `S`, `H`, `P`, `=`, or `X`), its positive `length`, and zero-based `sequenceOffset` and `referenceOffset` before the operation. Reference offsets are relative to the record's `start`; sequence offsets index its stored sequence.
+
+## BamMate
+
+`BamMate` contains `chromosome: string`, `start: number`, `strand: "+" | "-"`, and `unmapped: boolean`. The chromosome is resolved using the mate's reference ID, which can differ from the alignment's reference. Start is zero-based or -1 if unavailable. Orientation and unmapped status come from flags 0x20 and 0x8.
+
+## Hosting the UCSC example
+
+The test fixtures use the unmodified [UCSC BAM example](https://genome.ucsc.edu/goldenPath/help/examples/bamExample.bam) and its [BAI index](https://genome.ucsc.edu/goldenPath/help/examples/bamExample.bam.bai). The tests serve these bytes through a mocked range endpoint.
+
+A live check on 2026-09-23 found that UCSC serves BAM ranges with `Content-Encoding: x-gzip`. The range reader rejects that response. To use these example files with this API, host copies on a server that serves the original bytes with HTTP 206, CORS, and no transport content encoding.
+
+## Supported files
+
+This reader supports BAI indexing, not CSI, CRAM, or unindexed BAM. BAM and BAI must describe the same coordinate-sorted file; matching reference counts alone cannot verify that an index is current. Alignments with more than 65,535 CIGAR operations store a placeholder (`l_seq S` followed by a reference-span `N`) and keep the real CIGAR in the `CG:B:I` auxiliary tag. The reader returns the `CG` operations in place of the placeholder. If that tag is missing or does not match the placeholder, the record keeps its reference span with an empty `cigar`. General auxiliary tag decoding and coverage aggregation are not part of this API.
+
+[BAM index](README.md) · [All reader APIs](../README.md)

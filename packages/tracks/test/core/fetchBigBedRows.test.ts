@@ -77,7 +77,7 @@ describe("fetchBigBedRows", () => {
     const nextRegion = { ...region, start: 200, end: 300 };
     await fetchBigBedRows({ ...input, region: nextRegion });
     expect(reader.create).toHaveBeenCalledTimes(1);
-    expect(read).toHaveBeenLastCalledWith(nextRegion);
+    expect(read).toHaveBeenLastCalledWith(nextRegion, { signal: undefined });
     await fetchBigBedRows({ ...input, url: "OTHER_URL_HERE" });
     await fetchBigBedRows({ ...input, schema: narrowPeakSchema.clone() });
     await fetchBigBedRows({ ...input, resources: createResources() });
@@ -114,8 +114,10 @@ describe("fetchBigBedRows", () => {
         config: { url: "YOUR_URL_HERE" },
       }),
       demand: {
+        basePairDetail: true,
         assembly: { id: "test", chromosomes: { chr1: 1000 } },
         region: { chromosome: "chr1", start: 100, end: 200 },
+        visibleRegion: { chromosome: "chr1", start: 100, end: 200 },
         width: 100,
       },
       resources: createResources(),

@@ -1,102 +1,81 @@
-import type { ErrorInfo } from "react";
-import type { DataState } from "../data/types";
+import { useSyncExternalStore, type ErrorInfo } from "react";
 import type { AnyTrackInstance } from "../../modules/types";
 import type { GenomicRegion } from "../../genome/region";
 import { RenderErrorBoundary } from "../RenderErrorBoundary";
-import type { PanDragHandlers } from "../viewport/usePanDrag";
-import { ErrorState } from "./ErrorState";
-import { SwapTrack } from "./SwapTrack";
-import { TrackContent } from "./TrackContent";
-import { TrackFrame } from "./TrackFrame";
-import type { SwapPreview } from "./swapTypes";
+import { useDataController, useGenomeBrowser } from "../state/browserContextState";
+import { getContentPlacement } from "../viewport/renderWindow";
+import { ErrorState } from "./content/ErrorState";
+import { TrackReorder } from "./reorder/TrackReorder";
+import { TrackContent } from "./content/TrackContent";
+import { TrackFrame } from "./frame/TrackFrame";
+import type { ReorderPreview } from "./reorder/reorderMath";
+import type { TrackLayout } from "./layout/trackLayout";
+import { useTrackStack } from "./trackStackContext";
 
 const trackRenderErrorPrefix = "[genomebrowser] Track render error";
 
 export function TrackRow({
-  track,
-  dataState,
+  layout,
   visibleRegion,
-  region,
-  y,
   previewOffsetY,
-  marginWidth,
-  trackWidth,
-  contentX,
-  contentWidth,
-  registerContentGroup,
-  panDrag,
-  isPanLocked,
   disableHover,
-  titleSize,
   onPreviewChange,
   onPreviewEnd,
 }: {
-  track: AnyTrackInstance;
-  dataState: DataState | undefined;
+  layout: TrackLayout;
   visibleRegion: GenomicRegion;
-  region: GenomicRegion;
-  y: number;
   previewOffsetY: number;
-  marginWidth: number;
-  trackWidth: number;
-  contentX?: number;
-  contentWidth?: number;
-  registerContentGroup?: (node: SVGGElement) => () => void;
-  panDrag?: PanDragHandlers;
-  isPanLocked?: boolean;
   disableHover: boolean;
-  titleSize: number;
-  onPreviewChange: (preview: SwapPreview) => void;
+  onPreviewChange: (preview: ReorderPreview) => void;
   onPreviewEnd: () => void;
 }) {
+  const { useTrackStore } = useGenomeBrowser();
+  const dataController = useDataController();
+  const { marginWidth, trackWidth } = useTrackStack();
+  const track = useTrackStore((state) =>
+    state.tracks[layout.index]?.base.id === layout.id ? state.tracks[layout.index] : undefined,
+  );
+  // Each row subscribes to its own entry, so one track's result renders only its row.
+  const getDataState = () => dataController.getTrack(layout.id);
+  const dataState = useSyncExternalStore(dataController.subscribe, getDataState, getDataState);
+
+  if (!track) return null;
+
+  // Each track is placed from the region its own data covers.
+  const region = dataState.status === "loading" ? visibleRegion : dataState.region;
+  const placement = getContentPlacement(region, visibleRegion, trackWidth, marginWidth);
+
   return (
-    <SwapTrack
-      track={track}
-      titleSize={titleSize}
-      disabled={isPanLocked}
-      onPreviewChange={onPreviewChange}
-      onPreviewEnd={onPreviewEnd}
-    >
+    <TrackReorder track={track} onPreviewChange={onPreviewChange} onPreviewEnd={onPreviewEnd}>
       {(swapProps) => (
         <TrackFrame
           {...swapProps}
           track={track}
-          y={y}
+          y={layout.y}
           previewOffsetY={previewOffsetY}
-          marginWidth={marginWidth}
-          trackWidth={trackWidth}
-          contentX={contentX}
-          contentWidth={contentWidth}
-          registerContentGroup={registerContentGroup}
-          panDrag={panDrag}
-          isPanLocked={isPanLocked}
+          contentX={placement.x}
+          contentWidth={placement.width}
+          limitsDrag={dataState.status !== "loading"}
           disableHover={disableHover}
-          titleSize={titleSize}
         >
           <RenderErrorBoundary
             fallback={
-              <ErrorState
-                x={0}
-                y={0}
-                width={contentWidth ?? trackWidth}
-                height={track.base.height}
-                message={`Track unavailable: ${track.base.title || track.base.id}`}
-              />
+              <ErrorState message={`Track unavailable: ${track.base.title || track.base.id}`} />
             }
             onError={(error, info) => reportTrackRenderError(track, error, info)}
           >
             <TrackContent
               track={track}
-              dataState={dataState ?? { status: "loading" }}
+              dataState={dataState}
               visibleRegion={visibleRegion}
               region={region}
-              width={contentWidth ?? trackWidth}
+              width={placement.width}
               height={track.base.height}
             />
           </RenderErrorBoundary>
         </TrackFrame>
       )}
-    </SwapTrack>
+    </TrackReorder>
   );
 }
 

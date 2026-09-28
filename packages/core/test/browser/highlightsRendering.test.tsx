@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
+
+import { createBrowserContextValue } from "./createBrowserContextValue";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Highlights } from "../../src/browser/overlays/Highlights";
-import { BrowserProvider } from "../../src/browser/state/BrowserContext";
+import { idleDataSource } from "./idleDataSource";
+import { BrowserContext } from "../../src/browser/state/browserContextState";
 import { createBrowserStore } from "../../src/browser/state/browserStore";
-import { createContextMenuStore } from "../../src/browser/state/contextMenuStore";
-import { createSettingsStore } from "../../src/browser/state/settingsStore";
 import { createTrackStore } from "../../src/browser/state/trackStore";
 
 describe("highlight rendering", () => {
@@ -20,35 +21,30 @@ describe("highlight rendering", () => {
       ],
     });
     const html = renderToStaticMarkup(
-      <BrowserProvider
-        value={{
+      <BrowserContext.Provider
+        value={createBrowserContextValue(
           browserStore,
-          trackStore: createTrackStore({ modules: [], tracks: [] }),
-          contextMenuStore: createContextMenuStore(),
-          settingsStore: createSettingsStore(),
-        }}
+          createTrackStore({ modules: [], tracks: [] }),
+          idleDataSource,
+        )}
       >
         <svg>
           <Highlights
             type="filled"
             region={region}
             marginWidth={100}
-            renderWidth={1000}
-            contentX={100}
-            browserWidth={1100}
+            trackWidth={1000}
             totalHeight={200}
           />
           <Highlights
             type="outlined"
             region={region}
             marginWidth={100}
-            renderWidth={1000}
-            contentX={100}
-            browserWidth={1100}
+            trackWidth={1000}
             totalHeight={200}
           />
         </svg>
-      </BrowserProvider>,
+      </BrowserContext.Provider>,
     );
     const container = document.createElement("div");
     container.innerHTML = html;

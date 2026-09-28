@@ -48,8 +48,10 @@ describe("CAVE track fetching", () => {
           },
         },
         demand: {
+          basePairDetail: true,
           assembly: { id: "hg38", chromosomes: { chr1: 248_956_422 } },
           region,
+          visibleRegion: region,
           width: 100,
         },
         resources: createResources(),
@@ -58,7 +60,7 @@ describe("CAVE track fetching", () => {
 
     expect(reader.createBigWigFile).toHaveBeenCalledTimes(2);
     expect(reader.readZoomLevel).toHaveBeenCalledTimes(2);
-    expect(reader.readZoomLevel).toHaveBeenCalledWith(region, 400);
+    expect(reader.readZoomLevel).toHaveBeenCalledWith(region, 400, { signal: undefined });
     expect(reader.read).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,7 @@
 # BAM alignments
 
-See [BAM alignments](bam.md) for usage, public types, and API contracts.
+Read coordinate-sorted alignment records by genomic region.
 
-[All reader APIs](../README.md)
+- [BAM reader](bam.md): factory, records, indexing, and limitations.
+
+Return to [Reader API reference](../README.md).

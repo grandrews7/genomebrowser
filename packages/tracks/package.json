@@ -27,10 +27,6 @@
       "types": "./dist/src/lib.d.ts",
       "import": "./dist/genomebrowser-tracks.es.js"
     },
-    "./bam": {
-      "types": "./dist/src/bam/index.d.ts",
-      "import": "./dist/bam.js"
-    },
     "./bigbed": {
       "types": "./dist/src/bigbed/index.d.ts",
       "import": "./dist/bigbed.js"
@@ -71,7 +67,11 @@
       "types": "./dist/src/ruler/index.d.ts",
       "import": "./dist/ruler.js"
     },
-    "./trackCollection.schema.json": "./schemas/trackCollection.schema.json"
+    "./trackCollection.schema.json": "./schemas/trackCollection.schema.json",
+    "./bam": {
+      "types": "./dist/src/bam/index.d.ts",
+      "import": "./dist/bam.js"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -82,6 +82,7 @@
     "build:checked": "pnpm typecheck && pnpm build",
     "typecheck": "tsc -b",
     "test": "vitest run",
+    "test:e2e": "node test/browser/dynseq.e2e.mjs",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
     "format": "oxfmt .",
@@ -106,6 +107,7 @@
     "@typescript/native": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@weng-lab/genomebrowser": "workspace:^2.0.0",
+    "@weng-lab/render-probe": "workspace:*",
     "jsdom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

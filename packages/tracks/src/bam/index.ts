@@ -1,28 +1,28 @@
-import type { ModuleCreateInput, ModuleInstance } from "@weng-lab/genomebrowser";
-import { defineTrackModule } from "@weng-lab/genomebrowser";
+import { defineTrackModule, type ModuleCreateInput } from "@weng-lab/genomebrowser";
+import type { BamRecord } from "@weng-lab/genomic-reader";
+import { bamConfigSchema } from "./schema";
 import { fetchBam } from "./fetch";
-import { CoverageBam, PileupBam, SashimiBam } from "./render";
-import { configSchema } from "./schema";
+import { DenseBam, SquishBam, PackBam, FullBam } from "./render";
 import { BamSettings } from "./settings";
 import { BamTooltip } from "./tooltip";
-import type { BamInteractionTarget } from "./types";
 
-/**
- * Sequence alignments read straight from a BAM, with no precomputed signal or
- * junction files. Coverage, read pileup, and sashimi arcs are all derived from
- * the alignments in view, which is why every display shares one zoom gate.
- */
-export const bamModule = defineTrackModule<BamInteractionTarget>()({
+export const bamModule = defineTrackModule<BamRecord>()({
   type: "bam",
-  defaults: { height: 180, color: "#5b8bd0" },
-  configSchema,
+  defaults: { display: "pack", height: 14, color: "#3366cc" },
+  configSchema: bamConfigSchema,
   fetch: fetchBam,
-  render: { coverage: CoverageBam, pileup: PileupBam, sashimi: SashimiBam },
+  render: { dense: DenseBam, squish: SquishBam, pack: PackBam, full: FullBam },
   settingsComponent: BamSettings,
   tooltipComponent: BamTooltip,
 });
 
 export type BamCreateInput = ModuleCreateInput<typeof bamModule>;
-export type BamConfig = ModuleInstance<typeof bamModule>["config"];
-export { computeCoverageRuns, computeJunctions } from "./helpers";
-export type { BamData, BamDisplay, BamInteractionTarget, BamJunction } from "./types";
+export type {
+  BamConfigInput,
+  BamConfig,
+  BamCoverageScale,
+  BamData,
+  BamDisplay,
+  BamInteraction,
+  BamRecord,
+} from "./types";

@@ -46,12 +46,14 @@ Every public export has a canonical destination below. File methods are document
 
 ### BAM alignments
 
-| Exports                                | Reference                                                     |
-| -------------------------------------- | ------------------------------------------------------------- |
-| `createBamFile`, `BamFileOptions`      | [BAM alignments](bam/bam.md#createbamfile-and-bamfileoptions) |
-| `BamFile`, `BamRecord`                 | [BAM alignments](bam/bam.md#bamfile-and-bamrecord)            |
-| `BamHeader`, `BamReference`            | [BAM alignments](bam/bam.md#the-header)                       |
-| `BamCigarOperation`, `BamCigarSegment` | [BAM alignments](bam/bam.md#cigar)                            |
+| Exports                           | Reference                                                  |
+| --------------------------------- | ---------------------------------------------------------- |
+| `createBamFile`, `BamFileOptions` | [BAM factory](bam/bam.md#createbamfile-and-bamfileoptions) |
+| `BamFile`                         | [BAM file](bam/bam.md#bamfile)                             |
+| `BamRecord`                       | [Alignment records](bam/bam.md#bamrecord)                  |
+| `BamCigarOperation`               | [CIGAR operations](bam/bam.md#bamcigaroperation)           |
+| `BamHeader`, `BamReference`       | [Header access](bam/bam.md#bamheader-and-bamreference)     |
+| `BamMate`                         | [Mate information](bam/bam.md#bammate)                     |
 
 ### TwoBit sequence
 

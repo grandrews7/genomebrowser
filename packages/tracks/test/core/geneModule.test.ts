@@ -8,10 +8,10 @@ vi.mock("@weng-lab/genomic-reader", async (importOriginal) => ({
   createBigBedFile: reader.createBigBedFile,
 }));
 
-import { fetchGene, parseBigGenePredRecord } from "../../src/gene/fetch";
+import { fetchGene, parseBigGenePredRecord } from "../../src/gene/data/fetch";
 import { geneModule } from "../../src/gene";
-import { bigGenePredPlusV1Schema, bigGenePredSchema } from "../../src/gene/schema";
-import { getObservedGeneTags } from "../../src/gene/tagCatalog";
+import { bigGenePredPlusV1Schema, bigGenePredSchema } from "../../src/gene/data/schema";
+import { getObservedGeneTags } from "../../src/gene/data/tagCatalog";
 import type { GeneConfig } from "../../src/gene/types";
 
 const rawFields = {
@@ -77,7 +77,13 @@ function context(
         rowHeight: 12,
       },
     },
-    demand: { assembly: { id: "test", chromosomes: { chr17: 1_000 } }, region, width: 100 },
+    demand: {
+      basePairDetail: true,
+      assembly: { id: "test", chromosomes: { chr17: 1_000 } },
+      region,
+      visibleRegion: region,
+      width: 100,
+    },
     resources,
   };
 }
@@ -208,7 +214,7 @@ describe("Gene module", () => {
       schema: bigGenePredSchema,
     });
     expect(read).toHaveBeenCalledTimes(2);
-    expect(read).toHaveBeenCalledWith(region);
+    expect(read).toHaveBeenCalledWith(region, { signal: undefined });
   });
 
   it("accumulates tags observed across successful reads of the same source", async () => {

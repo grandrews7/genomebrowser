@@ -20,7 +20,17 @@ export type Highlight = {
 export type BrowserSelectionMode = "pan" | "zoom" | "highlight";
 export type SelectionHighlightStyle = Pick<Highlight, "color" | "opacity" | "type">;
 
+export type BasePairDetailSettings = {
+  /** Largest visible span eligible for base-pair data. Defaults to 100 bp. */
+  maxVisibleBases: number;
+};
+
+export type BasePairDetailMutationResult =
+  | { ok: true }
+  | MutationFailure<"INVALID_BASE_PAIR_DETAIL">;
+
 export type BrowserStoreInput = {
+  basePairDetail?: BasePairDetailSettings;
   assembly: AssemblyDefinition;
   region: GenomicRegion;
   marginWidth?: number;
@@ -53,6 +63,8 @@ export type BrowserSelectionMutationResult =
 export type BrowserHighlightMutationResult = { ok: true } | MutationFailure<"INVALID_HIGHLIGHT">;
 
 export type BrowserStore = {
+  basePairDetail: BasePairDetailSettings;
+  setBasePairDetail: (settings: BasePairDetailSettings) => BasePairDetailMutationResult;
   readonly assembly: AssemblyDefinition;
   region: GenomicRegion;
   marginWidth: number;
@@ -62,6 +74,12 @@ export type BrowserStore = {
   highlights: Highlight[];
   selectionMode: BrowserSelectionMode;
   selectionHighlight: SelectionHighlightStyle;
+  /**
+   * True while a mounted browser is loading track data. Pointer interaction in
+   * the browser is blocked meanwhile. Set by the browser; read it to disable
+   * application controls until the browser has settled.
+   */
+  readonly isLoading: boolean;
   setSelectionMode: (mode: BrowserSelectionMode) => BrowserSelectionMutationResult;
   setSelectionHighlight: (style: SelectionHighlightStyle) => BrowserSelectionMutationResult;
   setRegion: (region: GenomicRegion) => BrowserRegionMutationResult;
@@ -94,7 +112,12 @@ const highlightSchema = z.object({
 const selectionModeSchema = z.enum(["pan", "zoom", "highlight"]);
 const selectionHighlightSchema = highlightSchema.pick({ color: true, opacity: true, type: true });
 
+const basePairDetailSchema = z.strictObject({
+  maxVisibleBases: z.number().int().positive(),
+});
+
 const browserStoreInputSchema = z.object({
+  basePairDetail: basePairDetailSchema.optional(),
   assembly: z.unknown().optional(),
   region: z.unknown().optional(),
   marginWidth: z.number().positive().optional(),
@@ -125,6 +148,18 @@ export function createBrowserStore(input: BrowserStoreInput): BrowserStoreInstan
     }
 
     return {
+      basePairDetail: parsedInput.basePairDetail ?? { maxVisibleBases: 100 },
+      setBasePairDetail: (settings) => {
+        const result = basePairDetailSchema.safeParse(settings);
+        if (!result.success)
+          return {
+            ok: false,
+            code: "INVALID_BASE_PAIR_DETAIL",
+            error: `Base-pair detail settings are invalid: ${formatZodError(result.error)}`,
+          };
+        set({ basePairDetail: result.data });
+        return { ok: true };
+      },
       assembly,
       region: initialRegionResult.region,
       marginWidth: parsedInput.marginWidth ?? 50,
@@ -139,6 +174,7 @@ export function createBrowserStore(input: BrowserStoreInput): BrowserStoreInstan
         opacity: 0.25,
         type: "filled",
       },
+      isLoading: false,
       setSelectionMode: (mode) => {
         const result = selectionModeSchema.safeParse(mode);
         if (!result.success)

@@ -1,30 +1,60 @@
 import { fetchOnChange } from "@weng-lab/genomebrowser";
 import { z } from "zod";
 import { hexColorSchema } from "../shared/schemas";
+import { rowHeightSchema } from "../shared/layout/rowLayout";
 
-export const configSchema = z.object({
-  url: fetchOnChange(z.string().min(1)),
-  /** Defaults to `url` with `.bai` appended. */
-  indexUrl: fetchOnChange(z.string().optional()),
-  /**
-   * Widest render window, in bases, that will be fetched. Coverage, pileup, and
-   * arcs are all derived from every alignment in the window, so this bounds how
-   * many records the page holds at once rather than how much is drawn. It
-   * measures the overscanned render window, which is wider than the viewport.
-   */
-  maxBases: fetchOnChange(z.number().int().positive().default(25000)),
-  /** Drops alignments below this mapping quality. 0 keeps multi-mapped reads. */
-  minMappingQuality: fetchOnChange(z.number().int().min(0).default(0)),
-  /** Upper bound on reads drawn in a pileup; the rest are evenly sampled out. */
-  maxReads: z.number().int().positive().default(400),
-  /** Hides junctions supported by fewer reads than this. */
-  minJunctionReads: z.number().int().min(1).default(1),
-  /**
-   * Hides junctions wider than this. Paralogous loci produce long-range
-   * junctions from multi-mapped reads; capping the span removes them.
-   */
-  maxJunctionSpan: z.number().int().positive().optional(),
-  coverageColor: hexColorSchema.default("#3a6ea5"),
-  /** Reverse-strand reads; forward-strand reads use the track's base color. */
-  reverseStrandColor: hexColorSchema.default("#d08b5b"),
-});
+const sectionHeightSchema = z.number().int().min(10).max(1000);
+
+export const bamCoverageScaleSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("auto") }),
+  z.object({ mode: z.literal("fixed"), max: z.number().finite().positive() }),
+]);
+
+export const bamConfigSchema = z
+  .object({
+    url: fetchOnChange(z.string().min(1)),
+    indexUrl: fetchOnChange(z.string().min(1)),
+    sequenceUrl: fetchOnChange(z.url({ protocol: /^https?$/ }).optional()),
+    maxWindow: fetchOnChange(z.number().int().min(1).max(100_000).default(50_000)),
+    filters: z
+      .object({
+        minimumMappingQuality: z.number().int().min(0).max(254).default(0),
+        includeDuplicates: z.boolean().default(true),
+      })
+      .prefault({}),
+    alignments: z
+      .object({
+        show: z.boolean().default(true),
+        rowHeight: rowHeightSchema.default(14),
+        forwardColor: hexColorSchema.default("#3366cc"),
+        reverseColor: hexColorSchema.default("#cc3333"),
+        maxRows: z.number().int().min(1).max(10_000).default(100),
+      })
+      .prefault({}),
+    coverage: z
+      .object({
+        show: z.boolean().default(true),
+        height: sectionHeightSchema.default(60),
+        color: hexColorSchema.default("#808080"),
+        scale: bamCoverageScaleSchema.default({ mode: "auto" }),
+        graph: z.enum(["bars", "line"]).default("bars"),
+        aggregation: z.enum(["mean", "max"]).default("mean"),
+      })
+      .prefault({}),
+    junctions: z
+      .object({
+        show: z.boolean().default(false),
+        height: sectionHeightSchema.default(100),
+        color: hexColorSchema.default("#808080"),
+        minimumSupport: z.number().int().min(1).default(1),
+        maximumSpan: z.number().int().min(1).optional(),
+        showCounts: z.boolean().default(true),
+      })
+      .prefault({}),
+  })
+  .refine((config) => config.alignments.show || config.coverage.show || config.junctions.show, {
+    message: "Show at least one of coverage, junctions, or alignments",
+  });
+export type BamConfigInput = z.input<typeof bamConfigSchema>;
+export type BamConfig = z.output<typeof bamConfigSchema>;
+export type BamCoverageScale = z.output<typeof bamCoverageScaleSchema>;

@@ -4,7 +4,11 @@ Choose a track by the source you already have. Each module includes a renderer, 
 
 ## Using modules
 
-[Create and validate tracks](trackCreation.md) covers registration, creation input, and schemas shared by all first-party modules. Import individual modules from their track subpaths, or use [firstPartyTrackModules](../02-collectionsAndSchemas/firstPartyTrackModules.md) to register all eight.
+[Create and validate tracks](trackCreation.md) covers registration, creation input, and schemas shared by all first-party modules. Import individual modules from their track subpaths, or use [firstPartyTrackModules](../02-collectionsAndSchemas/firstPartyTrackModules.md) to register all nine.
+
+## BAM files
+
+- [BAM](bam.md) reads coordinate-sorted alignments with a BAI index. It stacks a coverage graph, splice-junction arcs, and strand-colored alignments drawn in dense, squish, pack, or full layouts.
 
 ## BigBed files
 
@@ -14,10 +18,6 @@ Choose a track by the source you already have. Each module includes a renderer, 
 - [Gene](gene.md) reads standard BigGenePred and BigGenePredPlusV1 records. Use it to show every transcript, transcripts matching selected tags, or a merged gene structure.
 
 These files must be available to the browser and support byte-range requests.
-
-## BAM files
-
-- [BAM](bam.md) reads alignments and their BAI index directly. Use it for coverage, read pileups, and sashimi junction arcs computed from the reads themselves rather than from precomputed files.
 
 ## BigWig files
 

@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
 
+import { createBrowserContextValue } from "./createBrowserContextValue";
+
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, expect, it } from "vitest";
 import { z } from "zod";
-import { BrowserProvider, InteractionGateProvider } from "../../src/browser/state/BrowserContext";
+import { idleDataSource } from "./idleDataSource";
+import { BrowserContext } from "../../src/browser/state/browserContextState";
 import { createBrowserStore } from "../../src/browser/state/browserStore";
 import { createTrackStore } from "../../src/browser/state/trackStore";
-import { createSettingsStore } from "../../src/browser/state/settingsStore";
-import { createContextMenuStore } from "../../src/browser/state/contextMenuStore";
-import { TrackControls } from "../../src/browser/track-row/TrackControls";
+import { TrackControls } from "../../src/browser/track-row/frame/TrackControls";
 import { defineTrackModule } from "../../src/modules/defineTrackModule";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -44,28 +45,21 @@ it("disables pinned move controls and moves other tracks only within the unpinne
     assembly: { id: "test", chromosomes: { chr1: 1000 } },
     region: { chromosome: "chr1", start: 0, end: 100 },
   });
-  const context = {
-    browserStore,
-    trackStore: useTrackStore,
-    settingsStore: createSettingsStore(),
-    contextMenuStore: createContextMenuStore(),
-  };
+  const context = createBrowserContextValue(browserStore, useTrackStore, idleDataSource);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
   await act(async () => {
     root?.render(
-      <BrowserProvider value={context}>
-        <InteractionGateProvider value={{ isInteractionBlocked: false }}>
-          <svg>
-            {tracks.map((track) => (
-              <g key={track.base.id} data-track={track.base.id}>
-                <TrackControls track={track} marginWidth={100} wrapperHeight={80} />
-              </g>
-            ))}
-          </svg>
-        </InteractionGateProvider>
-      </BrowserProvider>,
+      <BrowserContext.Provider value={context}>
+        <svg>
+          {tracks.map((track) => (
+            <g key={track.base.id} data-track={track.base.id}>
+              <TrackControls track={track} marginWidth={100} wrapperHeight={80} />
+            </g>
+          ))}
+        </svg>
+      </BrowserContext.Provider>,
     );
   });
   const control = (id: string, position: number) => {

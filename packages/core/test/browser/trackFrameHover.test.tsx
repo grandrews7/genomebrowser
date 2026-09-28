@@ -1,15 +1,18 @@
 // @vitest-environment jsdom
 
+import { createBrowserContextValue } from "./createBrowserContextValue";
+
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { createBrowserStore } from "../../src/browser/state/browserStore";
-import { BrowserProvider, InteractionGateProvider } from "../../src/browser/state/BrowserContext";
-import { createContextMenuStore } from "../../src/browser/state/contextMenuStore";
+import { idleDataSource } from "./idleDataSource";
+import { BrowserContext } from "../../src/browser/state/browserContextState";
 import { createSettingsStore } from "../../src/browser/state/settingsStore";
 import { createTrackStore } from "../../src/browser/state/trackStore";
-import { TrackFrame } from "../../src/browser/track-row/TrackFrame";
+import { TrackFrame } from "../../src/browser/track-row/frame/TrackFrame";
+import { TrackStackContext } from "../../src/browser/track-row/trackStackContext";
 import { hg38 } from "../../src/genome/presets";
 import { defineTrackModule } from "../../src/modules/defineTrackModule";
 
@@ -102,22 +105,45 @@ async function renderFrame({
     region: { chromosome: "chr1", start: 1, end: 100 },
   });
   const trackStore = createTrackStore({ modules: [module], tracks: [track] });
-  const contextMenuStore = createContextMenuStore();
+  const stack = {
+    marginWidth,
+    trackWidth,
+    titleSize: 12,
+    registerContentGroup: () => () => {},
+    panDrag: {
+      isDragging: () => false,
+      subscribeEnd: () => () => {},
+      onPointerDown: () => false,
+      onPointerMove: () => {},
+      onPointerUp: () => {},
+      onPointerCancel: () => {},
+      onLostPointerCapture: () => {},
+      onClickCapture: () => {},
+    },
+  };
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
 
   await act(async () =>
     root?.render(
-      <BrowserProvider value={{ browserStore, trackStore, contextMenuStore, settingsStore }}>
-        <InteractionGateProvider value={{ isInteractionBlocked: false }}>
-          <svg>
+      <BrowserContext.Provider
+        value={{
+          ...createBrowserContextValue(browserStore, trackStore, idleDataSource),
+          settingsStore,
+        }}
+      >
+        <svg>
+          <TrackStackContext.Provider value={stack}>
             <TrackFrame
               track={track}
               y={0}
-              marginWidth={marginWidth}
-              trackWidth={trackWidth}
-              titleSize={12}
+              previewOffsetY={0}
+              contentX={marginWidth}
+              contentWidth={trackWidth}
+              limitsDrag={false}
+              swapping={false}
+              isDragClone={false}
               disableHover={disableHover}
               onSwapPointerDown={onSwapPointerDown}
             >
@@ -128,9 +154,9 @@ async function renderFrame({
                 onMouseMove={onDataHover}
               />
             </TrackFrame>
-          </svg>
-        </InteractionGateProvider>
-      </BrowserProvider>,
+          </TrackStackContext.Provider>
+        </svg>
+      </BrowserContext.Provider>,
     ),
   );
 }
