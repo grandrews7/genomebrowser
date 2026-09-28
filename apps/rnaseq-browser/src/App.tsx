@@ -149,6 +149,7 @@ const bamTracks: AnyTrackInstance[] = BAM_TRACKS.map((track) =>
       alignments: {
         show: track.showAlignments ?? true,
         ...(track.maxAlignmentRows ? { maxRows: track.maxAlignmentRows } : {}),
+        ...(track.alignmentRowHeight ? { rowHeight: track.alignmentRowHeight } : {}),
       },
     },
   }),

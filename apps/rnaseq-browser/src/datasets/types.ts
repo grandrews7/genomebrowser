@@ -74,6 +74,12 @@ export type BamTrack = {
    * either way, so this trades pileup detail for vertical space.
    */
   maxAlignmentRows?: number;
+  /**
+   * Height of one read row. Read names are drawn only at 10 or more, and in
+   * "squish" the row is halved, so either a squished display or a height below
+   * 10 gives unlabelled bars.
+   */
+  alignmentRowHeight?: number;
 };
 
 export type DynseqTrack = {

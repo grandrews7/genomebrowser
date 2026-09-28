@@ -250,7 +250,10 @@ export const BAM_TRACKS: BamTrack[] = [
     title: "RNA-seq alignments (SRX4488631)",
     url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/SRX4488631.bam",
     height: 300,
-    display: "pack",
+    // Squish halves the row height, which drops the per-read name labels and
+    // fits twice as many reads in the same space. Names at this density are
+    // mostly what you see rather than the alignments themselves.
+    display: "squish",
     showCoverage: true,
     showJunctions: true,
     coverageHeight: 90,
@@ -258,7 +261,7 @@ export const BAM_TRACKS: BamTrack[] = [
     // UBQ10 holds 22,000 reads in view. Drawing them all buries the coverage
     // and junction sections under a screen of rows, and the counts above come
     // from every read regardless.
-    maxAlignmentRows: 20,
+    maxAlignmentRows: 40,
     maxWindow: 30000,
     // Arabidopsis introns are short: the median is near 100 bp and few exceed a
     // couple of kb. Junctions spanning tens of kb are readthrough or
