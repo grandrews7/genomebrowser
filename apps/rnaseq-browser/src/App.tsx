@@ -123,17 +123,33 @@ const bamTracks: AnyTrackInstance[] = BAM_TRACKS.map((track) =>
     base: {
       id: track.id,
       title: track.title,
-      display: track.display ?? "coverage",
+      // `display` now sets the read layout only; coverage and junctions are
+      // sections stacked above it, each shown or hidden on its own.
+      display: track.display ?? "pack",
       height: track.height ?? 180,
     },
     config: {
       url: resolveUrl(track.url),
-      ...(track.indexUrl ? { indexUrl: resolveUrl(track.indexUrl) } : {}),
-      ...(track.maxBases ? { maxBases: track.maxBases } : {}),
+      // The module requires an index, so fall back to the conventional name.
+      indexUrl: resolveUrl(track.indexUrl ?? `${track.url}.bai`),
+      ...(track.maxWindow ? { maxWindow: track.maxWindow } : {}),
       ...(track.minMappingQuality !== undefined
-        ? { minMappingQuality: track.minMappingQuality }
+        ? { filters: { minimumMappingQuality: track.minMappingQuality } }
         : {}),
-      ...(track.maxJunctionSpan ? { maxJunctionSpan: track.maxJunctionSpan } : {}),
+      coverage: {
+        show: track.showCoverage ?? true,
+        ...(track.coverageHeight ? { height: track.coverageHeight } : {}),
+      },
+      junctions: {
+        show: track.showJunctions ?? false,
+        ...(track.junctionHeight ? { height: track.junctionHeight } : {}),
+        ...(track.minJunctionSupport ? { minimumSupport: track.minJunctionSupport } : {}),
+        ...(track.maxJunctionSpan ? { maximumSpan: track.maxJunctionSpan } : {}),
+      },
+      alignments: {
+        show: track.showAlignments ?? true,
+        ...(track.maxAlignmentRows ? { maxRows: track.maxAlignmentRows } : {}),
+      },
     },
   }),
 );

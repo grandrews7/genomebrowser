@@ -49,8 +49,8 @@ export const BAM_TRACKS: BamTrack[] = [
     title: "HepG2 RNA-seq (ENCFF660EXG)",
     url: `${BASE}/ENCFF660EXG.bam`,
     height: 180,
-    display: "pileup",
-    maxBases: 100000,
+    display: "pack",
+    maxWindow: 100000,
     minMappingQuality: 1,
   },
 ];

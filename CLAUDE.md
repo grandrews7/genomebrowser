@@ -6,21 +6,28 @@ what the fork adds, which upstream's docs do not mention.
 
 ## What the fork carries that upstream does not
 
-| Addition                                  | Where                            | Upstream status |
-| ----------------------------------------- | -------------------------------- | --------------- |
-| BAM/BAI reading (`createBamFile`)          | `packages/reader/src/bam.ts`     | PR #263, open   |
-| dynseq track module                        | `packages/tracks/src/dynseq/`    | PR #264, open   |
-| BAM track module (coverage/pileup/sashimi) | `packages/tracks/src/bam/`       | not yet filed   |
-| Living Models browser app                  | `apps/rnaseq-browser/`           | fork-only       |
+The BAM and dynseq work has all landed upstream, so `packages/` now tracks
+`weng-lab/genomebrowser` rather than carrying its own copies:
 
-Because #263 and #264 are unmerged, **the published 2.0.0 packages do not
-contain any of this**, and the fork carries the same version number, so a plain
-`npm install` silently resolves to upstream's build with no `./bam` or
-`./dynseq` and no warning. Consuming these from another project means packing
-tarballs from this fork; `apps/rnaseq-browser/DEPLOY.md` has the recipe.
+| Contribution                    | Outcome                                            |
+| ------------------------------- | -------------------------------------------------- |
+| dynseq track module             | merged as #264                                      |
+| BAM/BAI reading                 | #263 adapted into Nishi's #267, merged              |
+| coverage and junction sections  | Jair built them in #293 after review of #267        |
+| range byte cache                | #306, open                                          |
 
-Keep the per-feature PR branches (`pr-bam-reader`, `pr-dynseq-track`) free of
-anything app-specific. Upstream asked for no Living Models content in them.
+What remains fork-only is the app in `apps/rnaseq-browser/` and this file.
+Resolve any future `packages/` conflict in upstream's favour; the fork has no
+package changes worth preserving except while a PR like #306 is in flight.
+
+The published `2.0.0` packages predate all of it, and the fork carries the same
+version number, so a plain `npm install` silently resolves to a build without
+`./bam` or `./dynseq` and nothing warns you. Consuming these from another
+project means packing tarballs; `apps/rnaseq-browser/DEPLOY.md` has the recipe.
+
+Keep PR branches free of anything app-specific - upstream asked for no Living
+Models content in them. `git add -A` from the repository root has swept a
+Firebase deploy cache into a PR once; stage deliberately.
 
 ## The app
 
@@ -58,7 +65,7 @@ These cost real time in this repo, and none of them produce an error:
 - **Transfer encoding.** `Content-Encoding: gzip` breaks the range requests that
   bigWig, bigBed and BAM depend on. Verify with
   `curl -I <url> | grep stored-content-encoding` that it says `identity`.
-- **`maxBases` is the render window**, which the browser overscans to 3x the
+- **`maxWindow` is the render window**, which the browser overscans to 3x the
   visible span (`PAN_OVERSCAN_MULTIPLIER`). A 30,000 gate starts drawing at
   about 10,000 bp visible. The same trap applies to any zoom gate read from
   `demand.region` in a fetcher, which is already overscanned; `visibleRegion` is

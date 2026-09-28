@@ -233,7 +233,7 @@ export const SIGNAL_TRACKS: SignalTrack[] = [
  * renamed, because RefSeq's 367,808 bp assembly is not TAIR10's 366,924 bp
  * ChrM. It is therefore absent from this assembly and simply not reachable.
  *
- * `maxBases` bounds the window, but window size is a poor proxy for cost here:
+ * `maxWindow` bounds the window, but window size is a poor proxy for cost here:
  * what the fetch pays for is the number of alignments, and a highly expressed
  * gene breaks the relationship. RBCS1A holds 456,000 reads inside 1,500 bp,
  * roughly twenty times the whole UBQ10 window, so it stalls the fetch no matter
@@ -250,8 +250,16 @@ export const BAM_TRACKS: BamTrack[] = [
     title: "RNA-seq alignments (SRX4488631)",
     url: "https://storage.googleapis.com/living-models-browser-data/arabidopsis/SRX4488631.bam",
     height: 300,
-    display: "sashimi",
-    maxBases: 30000,
+    display: "pack",
+    showCoverage: true,
+    showJunctions: true,
+    coverageHeight: 90,
+    junctionHeight: 130,
+    // UBQ10 holds 22,000 reads in view. Drawing them all buries the coverage
+    // and junction sections under a screen of rows, and the counts above come
+    // from every read regardless.
+    maxAlignmentRows: 20,
+    maxWindow: 30000,
     // Arabidopsis introns are short: the median is near 100 bp and few exceed a
     // couple of kb. Junctions spanning tens of kb are readthrough or
     // misalignment rather than splicing, and they flatten every real arc into

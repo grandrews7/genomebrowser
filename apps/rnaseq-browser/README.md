@@ -33,21 +33,21 @@ import { bamModule } from "@weng-lab/genomebrowser-tracks/bam";
 import { dynseqModule } from "@weng-lab/genomebrowser-tracks/dynseq";
 ```
 
-| Module   | Displays                        | What it draws                                                                          |
-| -------- | ------------------------------- | -------------------------------------------------------------------------------------- |
-| `bam`    | `coverage`, `pileup`, `sashimi` | Depth, stacked reads, and junction arcs, all derived live from the alignments.         |
-| `dynseq` | `full`                          | Per-base scores as a filled signal, becoming scaled nucleotide letters when zoomed in. |
+| Module   | Displays                          | What it draws                                                                                                                                     |
+| -------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bam`    | `dense`, `squish`, `pack`, `full` | Coverage, junction arcs and stacked reads. `display` sets the read layout; coverage and junctions are sections above it, each toggled on its own. |
+| `dynseq` | `full`                            | Per-base scores as a filled signal, becoming scaled nucleotide letters when zoomed in.                                                            |
 
 BAM reading is in `@weng-lab/genomic-reader` as `createBamFile`, so the app has
-no BAM-specific dependency of its own. Neither module is in the published
-2.0.0 packages yet; both are open upstream as weng-lab/genomebrowser#263 and
-\#264, so this fork's build is the only place they exist. That matters if you
-consume the packages from another project - see the note in `DEPLOY.md`.
+no BAM-specific dependency of its own. Both are upstream now: the dynseq track merged as weng-lab/genomebrowser#264,
+the BAM reader was adapted into #267, and #293 rebuilt the BAM track around
+coverage, junction and alignment sections. This fork tracks that work rather
+than carrying its own copy.
 
 ## Reading BAM in a browser
 
 Coverage, pileup, and arcs all come from materializing every alignment in the
-window, so `maxBases` in the dataset bounds it. It measures the **render**
+window, so `maxWindow` in the dataset bounds it. It measures the **render**
 window, which the browser overscans to 3x the visible span: a 30,000 gate starts
 drawing at about 10,000 bp visible.
 

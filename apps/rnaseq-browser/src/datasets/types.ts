@@ -35,28 +35,45 @@ export type BamTrack = {
   id: string;
   title: string;
   url: string;
-  /** The index is assumed to be <url>.bai unless this is given. */
+  /** Defaults to <url>.bai. */
   indexUrl?: string;
   height?: number;
   /**
-   * "coverage" draws depth alone; "pileup" adds stacked reads below it;
-   * "sashimi" adds splice-junction arcs below it.
+   * How the reads themselves are laid out. Coverage and junctions are separate
+   * sections stacked above them, toggled below, not display modes.
    */
-  display?: "coverage" | "pileup" | "sashimi";
+  display?: "dense" | "squish" | "pack" | "full";
   /**
-   * Widest window, in bases, that will be fetched. Coverage, reads, and arcs
-   * all come from holding every alignment in the window, so this bounds memory
-   * rather than what is drawn.
+   * Widest window, in bases, that will be fetched. Every section comes from
+   * holding the alignments in the window, so this bounds memory rather than
+   * what is drawn.
    *
    * It measures the RENDER window, which the browser overscans to 3x the
-   * visible span so panning stays smooth. A 100,000 gate therefore starts
-   * drawing at a visible width of about 33,000 bp.
+   * visible span so panning stays smooth. A 30,000 gate therefore starts
+   * drawing at a visible width of about 10,000 bp.
    */
-  maxBases?: number;
+  maxWindow?: number;
   /** Drops alignments below this MAPQ. 0, the default, keeps multi-mappers. */
   minMappingQuality?: number;
-  /** Hides junctions wider than this; useful at paralogous loci. */
+
+  /** Per-base depth. On by default. */
+  showCoverage?: boolean;
+  coverageHeight?: number;
+  /** Splice-junction arcs, labelled with supporting read counts. Off by default. */
+  showJunctions?: boolean;
+  junctionHeight?: number;
+  /** Junctions with fewer supporting reads than this are not drawn. */
+  minJunctionSupport?: number;
+  /** Hides junctions wider than this; useful where readthrough dominates. */
   maxJunctionSpan?: number;
+  /** The read pileup itself. On by default. */
+  showAlignments?: boolean;
+  /**
+   * Rows of reads to draw. A dense RNA-seq locus has far more than fit, and the
+   * track says how many it left out. Coverage and junctions count every read
+   * either way, so this trades pileup detail for vertical space.
+   */
+  maxAlignmentRows?: number;
 };
 
 export type DynseqTrack = {
