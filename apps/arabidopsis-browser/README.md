@@ -10,20 +10,24 @@ starting region, gene-track settings, and track lists. [`src/config.ts`](src/con
 names the active one, so switching between datasets is a single line:
 
 ```ts
-export * from "./datasets/hepg2";
+export * from "./datasets/arabidopsis";
 ```
 
-`datasets/arabidopsis.ts` is the committed default and the non-human example:
-TAIR10, its own annotation built from an Ensembl GTF, and every file served
-from a public bucket, so a fresh clone renders without any local data.
-`datasets/hepg2.ts` is the human counterpart, and needs no annotation of its
-own because the packaged GENCODE catalog covers hg38 and mm10.
+`datasets/arabidopsis.ts` is the only one shipped: TAIR10, its own annotation
+built from an Ensembl GTF, and every file served from a public bucket, so a
+fresh clone renders without any local data.
+
+It is also the harder of the two cases to copy. An hg38 or mm10 dataset needs
+no annotation of its own - leave `GENE_TRACK_URL` undefined and the packaged
+GENCODE catalog supplies gene models, making `GENCODE_RELEASE` and
+`GENE_TRACK_VARIANT` the only settings that matter. Every other assembly has to
+build a BigGenePred bigBed, which `DEPLOY.md` documents for TAIR10.
 
 To use local files instead, drop them in `public/` and reference them as
 `/my-sample.bw`. That sidesteps CORS entirely, and `public/` is gitignored
 apart from its own `.gitignore`, so data never reaches the repository.
 
-To add one, copy the closer of the two, point it at your files, and name it in
+To add one, copy it, point it at your files, and name it in
 `config.ts`. `Dataset` in [`datasets/types.ts`](src/datasets/types.ts) is the
 contract each file satisfies, so a missing member is a compile error rather than
 an empty track. Everything else is wiring.

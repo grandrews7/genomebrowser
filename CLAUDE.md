@@ -51,8 +51,7 @@ bundle 197 MB instead of 800 KB.
 
 Adding a dataset is one file plus one line, and nothing else:
 
-1. Copy `src/datasets/hepg2.ts` (human, uses the packaged GENCODE catalog) or
-   `src/datasets/arabidopsis.ts` (non-human, supplies its own annotation).
+1. Copy `src/datasets/arabidopsis.ts`, the only dataset shipped.
 2. Point it at your files.
 3. Name it in `src/config.ts`: `export * from "./datasets/<name>";`
 
