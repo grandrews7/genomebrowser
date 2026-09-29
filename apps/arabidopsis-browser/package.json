@@ -1,5 +1,5 @@
 {
-  "name": "@weng-lab/rnaseq-browser",
+  "name": "@living-models/arabidopsis-browser",
   "version": "0.0.0",
   "private": true,
   "type": "module",

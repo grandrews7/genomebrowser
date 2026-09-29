@@ -258,6 +258,61 @@ importers:
         specifier: 2.10.11
         version: 2.10.11
 
+  apps/arabidopsis-browser:
+    dependencies:
+      '@emotion/react':
+        specifier: 'catalog:'
+        version: 11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+      '@emotion/styled':
+        specifier: 'catalog:'
+        version: 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
+      '@mui/material':
+        specifier: 'catalog:'
+        version: 7.3.11(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@weng-lab/genomebrowser':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@weng-lab/genomebrowser-tracks':
+        specifier: workspace:*
+        version: link:../../packages/tracks
+      '@weng-lab/genomic-reader':
+        specifier: workspace:*
+        version: link:../../packages/reader
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: 26.1.2
+        version: 26.1.2
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: ^5.0.0
+        version: 5.2.0(supports-color@8.1.1)(vite@7.3.6(@types/node@26.1.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.13)(yaml@2.9.1))
+      oxfmt:
+        specifier: 0.61.0
+        version: 0.61.0
+      oxlint:
+        specifier: 1.76.0
+        version: 1.76.0
+      typescript:
+        specifier: npm:@typescript/typescript6@6.0.2
+        version: '@typescript/typescript6@6.0.2'
+      vite:
+        specifier: ^7.0.0
+        version: 7.3.6(@types/node@26.1.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.13)(yaml@2.9.1)
+
   apps/playground:
     dependencies:
       '@emotion/react':
@@ -315,61 +370,6 @@ importers:
       typescript:
         specifier: catalog:native
         version: 7.0.2
-
-  apps/rnaseq-browser:
-    dependencies:
-      '@emotion/react':
-        specifier: 'catalog:'
-        version: 11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
-      '@emotion/styled':
-        specifier: 'catalog:'
-        version: 11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1)
-      '@mui/material':
-        specifier: 'catalog:'
-        version: 7.3.11(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@weng-lab/genomebrowser':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@weng-lab/genomebrowser-tracks':
-        specifier: workspace:*
-        version: link:../../packages/tracks
-      '@weng-lab/genomic-reader':
-        specifier: workspace:*
-        version: link:../../packages/reader
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      zod:
-        specifier: 4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@types/node':
-        specifier: 26.1.2
-        version: 26.1.2
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.3.0
-      '@types/react-dom':
-        specifier: 'catalog:'
-        version: 19.3.0(@types/react@19.3.0)
-      '@vitejs/plugin-react':
-        specifier: ^5.0.0
-        version: 5.2.0(supports-color@8.1.1)(vite@7.3.6(@types/node@26.1.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.13)(yaml@2.9.1))
-      oxfmt:
-        specifier: 0.61.0
-        version: 0.61.0
-      oxlint:
-        specifier: 1.76.0
-        version: 1.76.0
-      typescript:
-        specifier: npm:@typescript/typescript6@6.0.2
-        version: '@typescript/typescript6@6.0.2'
-      vite:
-        specifier: ^7.0.0
-        version: 7.3.6(@types/node@26.1.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.13)(yaml@2.9.1)
 
   apps/standalone:
     dependencies:
@@ -6554,7 +6554,6 @@ snapshots:
       '@esbuild/win32-arm64': 0.28.2
       '@esbuild/win32-ia32': 0.28.2
       '@esbuild/win32-x64': 0.28.2
-    optional: true
 
   escalade@3.2.0: {}
 

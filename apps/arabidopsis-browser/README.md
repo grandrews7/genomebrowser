@@ -1,4 +1,4 @@
-# RNA-seq Browser
+# Arabidopsis Browser
 
 A Vite single-page app for looking at a locus across assays: bigWig signal,
 gene annotation, BAM alignments with coverage and splice junctions, and
@@ -80,7 +80,7 @@ From the repo root:
 
 ```sh
 pnpm install
-pnpm --filter @weng-lab/rnaseq-browser dev
+pnpm --filter @living-models/arabidopsis-browser dev
 ```
 
 The workspace packages resolve to their TypeScript sources (see the aliases in

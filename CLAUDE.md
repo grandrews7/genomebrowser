@@ -8,7 +8,7 @@ what the fork adds, which upstream's docs do not mention.
 
 ```sh
 pnpm install
-pnpm --filter @weng-lab/rnaseq-browser dev     # http://localhost:5173
+pnpm --filter @living-models/arabidopsis-browser dev     # http://localhost:5173
 ```
 
 No build step: the Vite aliases resolve the workspace packages to TypeScript
@@ -29,14 +29,14 @@ The BAM and dynseq work has all landed upstream, so `packages/` now tracks
 | coverage and junction sections  | Jair built them in #293 after review of #267        |
 | range byte cache                | #306, open                                          |
 
-What remains fork-only is the app in `apps/rnaseq-browser/` and this file.
+What remains fork-only is the app in `apps/arabidopsis-browser/` and this file.
 Resolve any future `packages/` conflict in upstream's favour; the fork has no
 package changes worth preserving except while a PR like #306 is in flight.
 
 The published `2.0.0` packages predate all of it, and the fork carries the same
 version number, so a plain `npm install` silently resolves to a build without
 `./bam` or `./dynseq` and nothing warns you. Consuming these from another
-project means packing tarballs; `apps/rnaseq-browser/DEPLOY.md` has the recipe.
+project means packing tarballs; `apps/arabidopsis-browser/DEPLOY.md` has the recipe.
 
 Keep PR branches free of anything app-specific - upstream asked for no Living
 Models content in them. `git add -A` from the repository root has swept a
@@ -44,7 +44,7 @@ Firebase deploy cache into a PR once; stage deliberately.
 
 ## The app
 
-`apps/rnaseq-browser` is a Vite SPA deployed to Firebase Hosting as the Living
+`apps/arabidopsis-browser` is a Vite SPA deployed to Firebase Hosting as the Living
 Models Genome Browser. Its data lives in a public GCS bucket and is **never**
 part of the build - `public/` is gitignored for that reason, and once made the
 bundle 197 MB instead of 800 KB.
@@ -61,7 +61,7 @@ or misspelled field is a compile error rather than a silently empty track.
 
 For hg38 and mm10, leave `GENE_TRACK_URL` undefined and the packaged GENCODE
 catalog supplies gene models. Every other assembly needs its own BigGenePred
-bigBed; `apps/rnaseq-browser/DEPLOY.md` documents how the TAIR10 one was built.
+bigBed; `apps/arabidopsis-browser/DEPLOY.md` documents how the TAIR10 one was built.
 
 Track URLs must be reachable over HTTPS with CORS **and** HTTP range requests;
 these formats read slices, never whole files. Local files avoid all of that:
@@ -118,7 +118,7 @@ These cost real time in this repo, and none of them produce an error:
 ```sh
 pnpm --filter @weng-lab/genomic-reader     typecheck && ... test -- --run
 pnpm --filter @weng-lab/genomebrowser-tracks typecheck && ... test -- --run
-pnpm --filter @weng-lab/rnaseq-browser     typecheck
+pnpm --filter @living-models/arabidopsis-browser     typecheck
 ```
 
 Editing a package and then reading it back through a built artifact needs
@@ -133,15 +133,15 @@ explanation, and record counts were verified unchanged before and after.
 ## Deploying
 
 ```sh
-pnpm --filter @weng-lab/rnaseq-browser build
-cd apps/rnaseq-browser && firebase deploy --only hosting
+pnpm --filter @living-models/arabidopsis-browser build
+cd apps/arabidopsis-browser && firebase deploy --only hosting
 ```
 
 Live at <https://living-models-browser.web.app>. Full procedure, cache headers,
 bucket layout and the data-preparation recipes are in
-[apps/rnaseq-browser/DEPLOY.md](apps/rnaseq-browser/DEPLOY.md).
+[apps/arabidopsis-browser/DEPLOY.md](apps/arabidopsis-browser/DEPLOY.md).
 
-That deploys to one project: `apps/rnaseq-browser/.firebaserc` names
+That deploys to one project: `apps/arabidopsis-browser/.firebaserc` names
 `living-models-browser`. Deploying a copy elsewhere means pointing it at
 another Firebase project and keeping `firebase.json` as it is - the `no-cache`
 header on `index.html` is not optional, and its absence is what makes a deploy

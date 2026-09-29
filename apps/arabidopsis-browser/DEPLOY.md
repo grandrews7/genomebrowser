@@ -11,8 +11,8 @@ billing account.
 ## Deploy
 
 ```sh
-pnpm --filter @weng-lab/rnaseq-browser build
-cd apps/rnaseq-browser && firebase deploy --only hosting
+pnpm --filter @living-models/arabidopsis-browser build
+cd apps/arabidopsis-browser && firebase deploy --only hosting
 ```
 
 Live at <https://living-models-browser.web.app>.

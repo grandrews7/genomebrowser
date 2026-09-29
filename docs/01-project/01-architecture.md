@@ -26,7 +26,7 @@ A track module supplies the behavior for its visualization, including fetching, 
 | `packages/ui`           | Navigation, track selection, highlight controls, and chromosome overviews for embedding the browser in existing websites.     |
 | `apps/standalone`       | The browser as its own product, with application-specific components and optional reuse of UI-package controls.               |
 | `apps/playground`       | Experiments and custom browser compositions used during development.                                                          |
-| `apps/rnaseq-browser`   | An RNA-seq browser with per-dataset configuration, using app-local dataset files rather than a track collection. The only Vite app. |
+| `apps/arabidopsis-browser`   | A multi-assay locus browser with per-dataset configuration, using app-local dataset files rather than a track collection. The only Vite app. |
 | `packages/create`       | A starter generator for developers building a browser application.                                                            |
 | `packages/render-probe` | Internal test utility that measures React render counts for render budgets. Private and unpublished.                          |
 
