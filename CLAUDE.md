@@ -4,6 +4,19 @@ Fork of `weng-lab/genomebrowser`. Read [AGENTS.md](AGENTS.md) first: it is the
 upstream maintainer guidance and still applies in full. This file covers only
 what the fork adds, which upstream's docs do not mention.
 
+## Running it
+
+```sh
+pnpm install
+pnpm --filter @weng-lab/rnaseq-browser dev     # http://localhost:5173
+```
+
+No build step: the Vite aliases resolve the workspace packages to TypeScript
+source, so a package edit shows up in the dev server immediately.
+
+pnpm is pinned to `12.4.2` by `packageManager`. Corepack normally supplies it;
+where Corepack is missing, `npm i -g pnpm@12.4.2` works.
+
 ## What the fork carries that upstream does not
 
 The BAM and dynseq work has all landed upstream, so `packages/` now tracks
@@ -49,6 +62,33 @@ or misspelled field is a compile error rather than a silently empty track.
 For hg38 and mm10, leave `GENE_TRACK_URL` undefined and the packaged GENCODE
 catalog supplies gene models. Every other assembly needs its own BigGenePred
 bigBed; `apps/rnaseq-browser/DEPLOY.md` documents how the TAIR10 one was built.
+
+Track URLs must be reachable over HTTPS with CORS **and** HTTP range requests;
+these formats read slices, never whole files. Local files avoid all of that:
+drop them in `public/` and reference them as `/my-sample.bw`.
+
+A BAM track is the one with real structure, because upstream draws it as
+stacked sections rather than display modes. `display` sets the read layout
+alone (`dense`, `squish`, `pack`, `full`), and coverage, junctions and
+alignments are each shown or hidden on their own:
+
+```ts
+{
+  id: "rna", title: "RNA-seq", url: `${BASE}/sample.bam`,   // index defaults to <url>.bai
+  display: "squish", showCoverage: true, showJunctions: true,
+  maxAlignmentRows: 40, maxWindow: 30000, maxJunctionSpan: 10000,
+}
+```
+
+Read names are drawn whenever the display is `pack` or `full` **and** the row
+is at least 10px tall. At a few thousand bases a label is wider than the read
+it names, so a dense locus reads as a wall of text; `squish` halves the row and
+drops them. `maxAlignmentRows` caps only what is drawn - coverage and junction
+counts always come from every read, and the track states how many it omitted.
+
+Leave `minMappingQuality` at 0 for STAR output. STAR writes 255 for a uniquely
+mapped read where the SAM spec means "unavailable", so filtering on MAPQ
+discards the good reads and keeps the multimappers.
 
 ## Four things that fail quietly
 
@@ -100,6 +140,12 @@ cd apps/rnaseq-browser && firebase deploy --only hosting
 Live at <https://living-models-browser.web.app>. Full procedure, cache headers,
 bucket layout and the data-preparation recipes are in
 [apps/rnaseq-browser/DEPLOY.md](apps/rnaseq-browser/DEPLOY.md).
+
+That deploys to one project: `apps/rnaseq-browser/.firebaserc` names
+`living-models-browser`. Deploying a copy elsewhere means pointing it at
+another Firebase project and keeping `firebase.json` as it is - the `no-cache`
+header on `index.html` is not optional, and its absence is what makes a deploy
+look like it silently did nothing.
 
 After deploying, confirm the served bundle hash matches the one just built
 rather than trusting the deploy output: Firebase defaults HTML to
