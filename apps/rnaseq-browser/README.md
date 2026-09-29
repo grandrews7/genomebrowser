@@ -1,8 +1,9 @@
 # RNA-seq Browser
 
-A Vite single-page app for looking at RNA-seq over a locus: bigWig coverage,
-GENCODE annotation, and two track modules that live in this app rather than in
-`packages/tracks`.
+A Vite single-page app for looking at a locus across assays: bigWig signal,
+gene annotation, BAM alignments with coverage and splice junctions, and
+per-base dynseq scores. Every track module comes from `packages/tracks`; the
+app is configuration and layout.
 
 Each dataset lives in [`src/datasets`](src/datasets) and owns its assembly,
 starting region, gene-track settings, and track lists. [`src/config.ts`](src/config.ts)
@@ -12,13 +13,17 @@ names the active one, so switching between datasets is a single line:
 export * from "./datasets/hepg2";
 ```
 
-`datasets/arabidopsis.ts` is the non-human example: TAIR10, its own annotation
-built from an Ensembl GTF, and files served from `public/`. `public/` is
-gitignored apart from its own `.gitignore`, so drop local data there without it
-reaching the repository. The committed default is `hepg2`, whose files are
-hosted, so a fresh clone renders without any local data.
+`datasets/arabidopsis.ts` is the committed default and the non-human example:
+TAIR10, its own annotation built from an Ensembl GTF, and every file served
+from a public bucket, so a fresh clone renders without any local data.
+`datasets/hepg2.ts` is the human counterpart, and needs no annotation of its
+own because the packaged GENCODE catalog covers hg38 and mm10.
 
-To add one, copy `datasets/hepg2.ts`, point it at your files, and name it in
+To use local files instead, drop them in `public/` and reference them as
+`/my-sample.bw`. That sidesteps CORS entirely, and `public/` is gitignored
+apart from its own `.gitignore`, so data never reaches the repository.
+
+To add one, copy the closer of the two, point it at your files, and name it in
 `config.ts`. `Dataset` in [`datasets/types.ts`](src/datasets/types.ts) is the
 contract each file satisfies, so a missing member is a compile error rather than
 an empty track. Everything else is wiring.
