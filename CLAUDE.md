@@ -27,11 +27,20 @@ The BAM and dynseq work has all landed upstream, so `packages/` now tracks
 | dynseq track module             | merged as #264                                      |
 | BAM/BAI reading                 | #263 adapted into Nishi's #267, merged              |
 | coverage and junction sections  | Jair built them in #293 after review of #267        |
-| range byte cache                | #306, open                                          |
+| range byte cache                | #306, approved then closed - see below               |
 
-What remains fork-only is the app in `apps/arabidopsis-browser/` and this file.
-Resolve any future `packages/` conflict in upstream's favour; the fork has no
-package changes worth preserving except while a PR like #306 is in flight.
+Fork-only: the app in `apps/arabidopsis-browser/`, this file, and **one commit
+in `packages/`** - the BAM range byte cache in `internal/bamChunkReader.ts`.
+
+That cache was #306. Nishi approved it; Jair closed it wanting the same idea
+generalised, "probably going to become a reader or core feature but want to
+make it track agnostic first so other modules can leverage a cache of some
+kind". The reasoning is sound - the BBI reader would benefit identically - but
+until that lands, upstream re-requests every byte on each pan and the fork does
+not. Keep the commit when merging upstream, and drop it once a general cache
+arrives.
+
+Resolve every other `packages/` conflict in upstream's favour.
 
 The published `2.0.0` packages predate all of it, and the fork carries the same
 version number, so a plain `npm install` silently resolves to a build without
