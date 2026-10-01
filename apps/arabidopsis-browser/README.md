@@ -7,15 +7,36 @@ app is configuration and layout.
 
 Each dataset lives in [`src/datasets`](src/datasets) and owns its assembly,
 starting region, gene-track settings, and track lists. [`src/config.ts`](src/config.ts)
-names the active one, so switching between datasets is a single line:
+lists the ones the browser offers, and a picker in the header switches between
+them at runtime:
 
 ```ts
-export * from "./datasets/arabidopsis";
+export const DATASETS: DatasetOption[] = [
+  { id: "assays", label: "Assay panel", dataset: arabidopsis },
+  { id: "motifs", label: "Attributions and motifs", dataset: arabidopsisMotifs },
+];
+export const DEFAULT_DATASET_ID = "motifs";
 ```
 
-`datasets/arabidopsis.ts` is the only one shipped: TAIR10, its own annotation
-built from an Ensembl GTF, and every file served from a public bucket, so a
-fresh clone renders without any local data.
+Switching keeps the region you are looking at, which is the point - the same
+locus under a different set of evidence. That works because the picker replaces
+the track list through the track store's `setTracks` rather than rebuilding the
+stores, so the browser store, and the region it holds, survive the switch.
+
+Every dataset in the list must share one assembly. The browser store binds its
+assembly at creation and normalises regions against it, so a second assembly
+needs a second store; `App.tsx` throws on load naming the offenders rather than
+quietly reinterpreting coordinates.
+
+Two are shipped, both TAIR10 with their own annotation built from an Ensembl
+GTF, and every file served from a public bucket, so a fresh clone renders
+without any local data:
+
+- `datasets/arabidopsis.ts` - the assay panel: RNA-seq signal and alignments,
+  phyloP, and fifteen ATAC samples.
+- `datasets/arabidopsis-motifs.ts` - gradient attributions and discovered
+  motifs for the BOTANIC fine-tuned ATAC model, as dynseq and bigBed tracks.
+  The one the browser opens on.
 
 It is also the harder of the two cases to copy. An hg38 or mm10 dataset needs
 no annotation of its own - leave `GENE_TRACK_URL` undefined and the packaged

@@ -1,5 +1,5 @@
 import { tair10 } from "@weng-lab/genomebrowser";
-import type { BamTrack, Dataset, DynseqTrack, SignalTrack } from "./types";
+import type { BamTrack, BigBedTrack, Dataset, DynseqTrack, SignalTrack } from "./types";
 
 /**
  * Arabidopsis thaliana, TAIR10.
@@ -271,8 +271,14 @@ export const BAM_TRACKS: BamTrack[] = [
   },
 ];
 
+/**
+ * No interval annotations in this dataset. `arabidopsis-motifs.ts` uses them
+ * for motif hits, seqlets and scored windows.
+ */
+export const BIGBED_TRACKS: BigBedTrack[] = [];
+
 /** Fails to compile if anything above is missing or the wrong shape. */
-const dataset = {
+export const dataset = {
   ASSEMBLY,
   INITIAL_REGION,
   SHOW_GENE_TRACK,
@@ -289,5 +295,5 @@ const dataset = {
   SIGNAL_TRACKS,
   BAM_TRACKS,
   DYNSEQ_TRACKS,
+  BIGBED_TRACKS,
 } satisfies Dataset;
-void dataset;

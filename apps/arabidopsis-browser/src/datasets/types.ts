@@ -82,6 +82,25 @@ export type BamTrack = {
   alignmentRowHeight?: number;
 };
 
+export type BigBedTrack = {
+  id: string;
+  title: string;
+  /** A BigBed of intervals: motif hits, seqlets, scored windows, ... */
+  url: string;
+  /**
+   * How the positional columns are read. The module ships bed3..bed9 and ccre;
+   * columns past the chosen schema are still carried on the row and shown in
+   * the tooltip, they are just not typed. A bed6+3 file is therefore read as
+   * "bed6" with its three extra columns along for the ride.
+   */
+  bedSchema?: "bed3" | "bed4" | "bed5" | "bed6" | "bed9" | "ccre";
+  /** "squish" gives each row its own line; "dense" collapses them onto one. */
+  display?: "dense" | "squish";
+  color?: string;
+  height?: number;
+  rowHeight?: number;
+};
+
 export type DynseqTrack = {
   id: string;
   title: string;
@@ -119,4 +138,21 @@ export type Dataset = {
   SIGNAL_TRACKS: SignalTrack[];
   BAM_TRACKS: BamTrack[];
   DYNSEQ_TRACKS: DynseqTrack[];
+  BIGBED_TRACKS: BigBedTrack[];
+};
+
+/**
+ * A dataset offered in the browser's dataset picker.
+ *
+ * Every option's `dataset.ASSEMBLY` must be the same, because the browser store
+ * binds its assembly once at creation and normalises every region against it.
+ * `App.tsx` checks this on load and throws naming the offenders, rather than
+ * letting a mismatched option render a browser whose coordinates mean nothing.
+ */
+export type DatasetOption = {
+  /** Stable key, used for the selector value. */
+  id: string;
+  /** What the selector shows. */
+  label: string;
+  dataset: Dataset;
 };

@@ -58,14 +58,21 @@ Models Genome Browser. Its data lives in a public GCS bucket and is **never**
 part of the build - `public/` is gitignored for that reason, and once made the
 bundle 197 MB instead of 800 KB.
 
-Adding a dataset is one file plus one line, and nothing else:
+Adding a dataset is one file plus one entry, and nothing else:
 
-1. Copy `src/datasets/arabidopsis.ts`, the only dataset shipped.
+1. Copy `src/datasets/arabidopsis.ts` (assay panel) or
+   `src/datasets/arabidopsis-motifs.ts` (attributions and motif calls).
 2. Point it at your files.
-3. Name it in `src/config.ts`: `export * from "./datasets/<name>";`
+3. Add it to `DATASETS` in `src/config.ts` with an `id` and a `label`.
 
 `Dataset` in `src/datasets/types.ts` is enforced with `satisfies`, so a missing
 or misspelled field is a compile error rather than a silently empty track.
+
+A header picker switches datasets at runtime. It calls the track store's
+`setTracks` rather than rebuilding the stores, so the region survives the
+switch - the same locus under different evidence. The consequence is that every
+dataset in `DATASETS` **must share one assembly**, because the browser store
+binds its assembly at creation; `App.tsx` throws on load if they disagree.
 
 For hg38 and mm10, leave `GENE_TRACK_URL` undefined and the packaged GENCODE
 catalog supplies gene models. Every other assembly needs its own BigGenePred

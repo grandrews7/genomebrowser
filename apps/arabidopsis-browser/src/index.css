@@ -82,6 +82,31 @@ h1 {
   box-shadow: 0 0 0 3px rgb(42 122 74 / 0.12);
 }
 
+/* Dataset picker, styled to sit level with the region box beside it. */
+.controls select.dataset {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 11px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.controls select.dataset:hover {
+  border-color: #cfdad4;
+}
+
+.controls select.dataset:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgb(42 122 74 / 0.12);
+}
+
 .controls button {
   font: inherit;
   font-size: 14px;
