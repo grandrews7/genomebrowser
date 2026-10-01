@@ -45,7 +45,24 @@ The bucket is public with CORS allowing any origin, so the deployed app reads it
 straight from the browser. Nothing else is served from the bucket; the app is
 Firebase's job alone.
 
-Two things matter when adding files:
+Every object is served `Cache-Control: public, max-age=31536000, immutable`, so
+a browser re-reads a file it has already seen without touching the network.
+That matters more than it sounds: releasing a track releases the reader's own
+cache, so revisiting a dataset reissues every range request, and the HTTP cache
+is what makes those free. Measured across a dataset switch, 249 requests
+returned 0 bytes from the network.
+
+**A file is therefore cached for a year, and replacing one in place will not
+reach anyone who has already loaded it.** Publish changed data under a new
+name and point the dataset at it, rather than overwriting. To reset the header
+on everything:
+
+```sh
+gcloud storage objects update "gs://living-models-browser-data/**" \
+  --cache-control="public, max-age=31536000, immutable"
+```
+
+Three things matter when adding files:
 
 - **Upload without transfer encoding.** `Content-Encoding: gzip` breaks the HTTP
   range requests that bigWig, bigBed and BAM all depend on, and these formats
