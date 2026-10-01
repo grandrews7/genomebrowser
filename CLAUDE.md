@@ -58,7 +58,22 @@ Models Genome Browser. Its data lives in a public GCS bucket and is **never**
 part of the build - `public/` is gitignored for that reason, and once made the
 bundle 197 MB instead of 800 KB.
 
-Adding a dataset is one file plus one entry, and nothing else:
+`apps/_template` is the same app with the Arabidopsis data and branding taken
+out and a working hg38 example in their place. Starting a new browser is a copy:
+
+```sh
+cp -R apps/_template apps/my-browser
+```
+
+then `package.json` (the name), `src/branding.ts`, `src/datasets/` and
+`src/config.ts`. Nothing in `App.tsx`, `datasets/types.ts`, `index.css` or
+`vite.config.ts` is project-specific, which is what makes copying the directory
+reasonable rather than a fork to maintain. It runs before you touch any data:
+hg38 gene models come from the packaged GENCODE catalog, and two views are
+wired so the picker is visible. Keep it building - it is in the workspace, so
+`pnpm verify` covers it and it cannot drift from the app it was cut from.
+
+Adding a dataset to an existing app is one file plus one entry, and nothing else:
 
 1. Copy `src/datasets/arabidopsis.ts` (assay panel) or
    `src/datasets/arabidopsis-motifs.ts` (attributions and motif calls).

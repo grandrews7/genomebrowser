@@ -123,12 +123,12 @@ significant digits, so every float is silently rounded - 5.0e-06 relative on
 this project's attribution tracks - and `bedGraphToBigWig` stores an explicit
 start and end per item, which inflates per-base data by about two thirds. The
 old recipe here did exactly that, and its "lossless" claim rested on converting
-the *rebuilt* file back to bedGraph, a test that only exercises the second leg
+the _rebuilt_ file back to bedGraph, a test that only exercises the second leg
 and cannot see the rounding the first leg already did.
 
 Go through a fixedStep wig instead. `%.9g` uniquely determines a float32, and a
 contiguous run of per-base values stores no coordinates at all, so the result is
-bit-exact *and* smaller than the source:
+bit-exact _and_ smaller than the source:
 
 ```python
 # rename_fixedstep.py - needs pyBigWig (HiPerGator: module load deeptools/3.5.2)
@@ -272,18 +272,18 @@ rendered by `src/datasets/arabidopsis-motifs.ts`. Source and full method are in
 `PROVENANCE.txt` beside the data, and in the README of the pipeline output at
 `/blue/jhernandezjarqui/gary.klajer/motif_discovery/bigwig/` on HiPerGator.
 
-| File | Contents |
-| ---- | -------- |
-| `grad_{count,profile,combined}_contrib.bw` | attribution at the reference base - the dynseq tracks |
-| `grad_*_hyp_{A,C,G,T}.bw` | per-base values for all four bases, for logos |
-| `coverage.bw` | scored windows covering each base |
-| `finemo_{count,combined}_hits.bb` | FiNeMo hits, all of them |
-| `finemo_{count,combined}_hits_sim0.9.bb` | the same filtered to `hit_similarity >= 0.9` |
-| `modisco_{count,profile,combined}_seqlets.bb` | TF-MoDISco seqlets |
-| `windows.bb` | the scored windows, named `split:peaks\|background:row` |
-| `discovered_patterns.meme` | every pattern with its family label |
-| `cbp_pred_nobias.bw` | ChromBPNet predicted signal, bias-corrected |
-| `cbp_{counts,profile}_contrib.bw` | ChromBPNet DeepSHAP attribution, bias-corrected |
+| File                                          | Contents                                                |
+| --------------------------------------------- | ------------------------------------------------------- |
+| `grad_{count,profile,combined}_contrib.bw`    | attribution at the reference base - the dynseq tracks   |
+| `grad_*_hyp_{A,C,G,T}.bw`                     | per-base values for all four bases, for logos           |
+| `coverage.bw`                                 | scored windows covering each base                       |
+| `finemo_{count,combined}_hits.bb`             | FiNeMo hits, all of them                                |
+| `finemo_{count,combined}_hits_sim0.9.bb`      | the same filtered to `hit_similarity >= 0.9`            |
+| `modisco_{count,profile,combined}_seqlets.bb` | TF-MoDISco seqlets                                      |
+| `windows.bb`                                  | the scored windows, named `split:peaks\|background:row` |
+| `discovered_patterns.meme`                    | every pattern with its family label                     |
+| `cbp_pred_nobias.bw`                          | ChromBPNet predicted signal, bias-corrected             |
+| `cbp_{counts,profile}_contrib.bw`             | ChromBPNet DeepSHAP attribution, bias-corrected         |
 
 Three things about this data are easy to get wrong:
 
@@ -301,8 +301,9 @@ Three things about this data are easy to get wrong:
 
 The `cbp_*` files come from a different pipeline - ChromBPNet, at
 `/blue/jhernandezjarqui/andrewsg/plant-atac/results/chrombpnet/SRX8571616-tair10/`
+
 - on the same ATAC sample and the same 30,965 MACS3 peaks, so the two models'
-attributions are comparable region for region. Three things about them:
+  attributions are comparable region for region. Three things about them:
 
 - **They carry organelles, unlike Gary's files.** `NC_000932.1` is ChrC at
   154,478 bp and matches TAIR10 exactly; `NC_037304.1` is 367,808 against
@@ -320,7 +321,7 @@ attributions are comparable region for region. Three things about them:
   blue alone.
 
 The twelve `hyp_*` files are uploaded but unused: `dynseqModule` takes a single
-signal and draws the *reference* base, so a stacked four-base logo needs a
+signal and draws the _reference_ base, so a stacked four-base logo needs a
 module that accepts four bigWigs. That module is the only thing missing.
 
 ## Using these packages from another project
