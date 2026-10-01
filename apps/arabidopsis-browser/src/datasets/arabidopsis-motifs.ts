@@ -146,18 +146,54 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
 ];
 
 /**
- * What the models predict, what was actually measured, and how many scored
+ * What each model predicts, what it was measured against, and how many scored
  * windows back each base.
  *
- * The predicted and observed tracks are directly comparable: the observed one
- * is the +4/-4 unstranded signal ChromBPNet was trained against, not the
- * +4/-5 CPM-normalised insertion signal that also exists in that pipeline and
- * would line up subtly wrong. Verified by comparing the deployed file against
- * the pipeline's own chrombpnet_signal output - identical min, max and mean.
+ * **Read each prediction against its own observed track, not the other one.**
+ * Both are +4/-4 shifted 5' cut sites of the same library, over the same cut
+ * site positions, with no coordinate offset between them. What differs is
+ * **PCR duplicate removal**: the ChromBPNet track is built from the BAM after
+ * `sambamba markdup -r`, the BOTANIC one from a BAM where duplicates were
+ * never marked. Its `@PG` chain filters with `-F 1804`, which drops reads
+ * already flagged 1024, but nothing upstream ever flagged any.
  *
- * The prediction is bias-corrected, so it is what the model believes the
- * sequence implies, with Tn5 preference removed. It will not track the
- * observed signal base for base at that level of detail, and should not.
+ * The arithmetic closes exactly. The dedup metrics report 80,197,636 reads in
+ * and 65,981,082 out, 17.73% duplicates; the two bigWigs total 80,197,634 and
+ * 65,981,082 cut sites. Peak pileup drops from 5,290 to 811 - duplicate stacks
+ * collapsing, which lowers a position's count without removing the position.
+ *
+ * So BOTANIC's count head was fit to totals inflated about 18%, and inflated
+ * unevenly, because duplicate rate rises with local coverage. Some of what it
+ * learned as accessibility is amplification. That does not undermine the
+ * attributions - a motif driving a real peak drives the duplicated one too -
+ * and the reported test correlations are against the same duplicated target so
+ * they are internally consistent. It does mean the two models were fit to
+ * different ground truths, which is worth remembering when comparing their
+ * predicted tracks here.
+ *
+ * A residual nobody needs to act on: the two tracks also come from separate
+ * alignment runs, two reads apart in 80.2 million, which leaves 98 singleton
+ * positions covered by one and not the other - 4e-06 of the total, and the
+ * expected result of `bowtie2 -k 1 --threads 8` reporting a different choice
+ * among equally scoring alignments.
+ *
+ * They are deliberately adjacent so the pairing is visible rather than implied.
+ *
+ * Neither observed track is the +4/-5 CPM-normalised insertion signal that also
+ * exists in the ChromBPNet pipeline, which would line up subtly wrong; the one
+ * here was checked against the pipeline's own chrombpnet_signal output and has
+ * identical min, max and mean.
+ *
+ * ChromBPNet's prediction is bias-corrected, so it is what the model believes
+ * the sequence implies with Tn5 preference removed. It will not track observed
+ * signal base for base at that level of detail, and should not.
+ *
+ * BOTANIC's prediction covers all 88,249 windows, train and val included, so
+ * most of what you see it has seen. Chromosome 4 is the held-out test split and
+ * the only honest place to judge it: predicted against observed log1p counts
+ * there is Pearson r 0.750 on peaks and 0.657 on background, against 0.914 on
+ * training peaks. Those three numbers are recomputed from the window bigBed
+ * below rather than quoted.
  *
  * `coverage` is worth leaving on: it is the difference between "the model
  * assigned this base no importance" and "no window scored this base at all",
@@ -167,6 +203,20 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
  */
 export const SIGNAL_TRACKS: SignalTrack[] = [
   {
+    id: "botanic-pred",
+    title: "BOTANIC predicted ATAC signal",
+    url: `${MOTIFS}/botanic1s_atac_predicted_signal.bw`,
+    color: "#1f6fb4",
+    height: 60,
+  },
+  {
+    id: "botanic-obs",
+    title: "BOTANIC observed ATAC - raw insertion counts, what it was trained against",
+    url: `${MOTIFS}/botanic1s_atac_observed_signal.bw`,
+    color: "#4a4a4a",
+    height: 60,
+  },
+  {
     id: "cbp-pred-nobias",
     title: "ChromBPNet predicted signal, bias-corrected (SRX8571616)",
     url: `${MOTIFS}/cbp_pred_nobias.bw`,
@@ -175,7 +225,7 @@ export const SIGNAL_TRACKS: SignalTrack[] = [
   },
   {
     id: "atac-srx8571616",
-    title: "ATAC siliques (SRX8571616) - observed, and what the prediction above is predicting",
+    title: "ChromBPNet observed ATAC (SRX8571616) - +4/-4 unstranded, what it was trained against",
     url: `${BASE}/atac-SRX8571616.bw`,
     color: "#6d7f1f",
     height: 60,
@@ -252,6 +302,15 @@ export const BIGBED_TRACKS: BigBedTrack[] = [
     display: "squish",
     color: "#a8432a",
     height: 46,
+  },
+  {
+    id: "botanic-window-counts",
+    title: "BOTANIC per-window predicted vs observed log1p counts (score = 100 x predicted)",
+    url: `${MOTIFS}/botanic1s_atac_window_counts.bb`,
+    bedSchema: "bed6",
+    display: "dense",
+    color: "#1f6fb4",
+    height: 22,
   },
   {
     id: "scored-windows",
