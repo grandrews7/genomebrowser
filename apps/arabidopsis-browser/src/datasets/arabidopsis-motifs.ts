@@ -150,11 +150,34 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
  * windows back each base.
  *
  * **Read each prediction against its own observed track, not the other one.**
- * The two observed tracks are the same ATAC library processed differently -
- * Pearson r 0.989 over a sample window, but not equal: BOTANIC trained on raw
- * insertion counts from its shard, ChromBPNet on the +4/-4 shifted unstranded
- * signal, and totals differ by around a sixth. They are deliberately adjacent
- * so the pairing is visible rather than implied.
+ * Both are +4/-4 shifted 5' cut sites of the same library, over the same cut
+ * site positions, with no coordinate offset between them. What differs is
+ * **PCR duplicate removal**: the ChromBPNet track is built from the BAM after
+ * `sambamba markdup -r`, the BOTANIC one from a BAM where duplicates were
+ * never marked. Its `@PG` chain filters with `-F 1804`, which drops reads
+ * already flagged 1024, but nothing upstream ever flagged any.
+ *
+ * The arithmetic closes exactly. The dedup metrics report 80,197,636 reads in
+ * and 65,981,082 out, 17.73% duplicates; the two bigWigs total 80,197,634 and
+ * 65,981,082 cut sites. Peak pileup drops from 5,290 to 811 - duplicate stacks
+ * collapsing, which lowers a position's count without removing the position.
+ *
+ * So BOTANIC's count head was fit to totals inflated about 18%, and inflated
+ * unevenly, because duplicate rate rises with local coverage. Some of what it
+ * learned as accessibility is amplification. That does not undermine the
+ * attributions - a motif driving a real peak drives the duplicated one too -
+ * and the reported test correlations are against the same duplicated target so
+ * they are internally consistent. It does mean the two models were fit to
+ * different ground truths, which is worth remembering when comparing their
+ * predicted tracks here.
+ *
+ * A residual nobody needs to act on: the two tracks also come from separate
+ * alignment runs, two reads apart in 80.2 million, which leaves 98 singleton
+ * positions covered by one and not the other - 4e-06 of the total, and the
+ * expected result of `bowtie2 -k 1 --threads 8` reporting a different choice
+ * among equally scoring alignments.
+ *
+ * They are deliberately adjacent so the pairing is visible rather than implied.
  *
  * Neither observed track is the +4/-5 CPM-normalised insertion signal that also
  * exists in the ChromBPNet pipeline, which would line up subtly wrong; the one

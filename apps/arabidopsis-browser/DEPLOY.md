@@ -312,10 +312,29 @@ correlations recompute to 0.750 on peaks and 0.657 on background, matching the
 README.
 
 Note there are now **two observed ATAC tracks** and they are not the same file.
-BOTANIC trained on raw insertion counts from its own shard; ChromBPNet on the
-+4/-4 shifted unstranded signal. Pearson r between them is 0.989 over a sample
-window but totals differ by about a sixth, so each prediction belongs with its
-own observed track.
+Both are +4/-4 shifted 5' cut sites of the same library over the same positions
+with no offset between them; what differs is **PCR duplicate removal**. The
+ChromBPNet track comes from the BAM after `sambamba markdup -r`, the BOTANIC one
+from a BAM where duplicates were never marked - its `@PG` chain filters with
+`-F 1804`, which drops reads already flagged 1024, but nothing upstream ever
+flagged any.
+
+The arithmetic closes: `results/picard/SRX8571616-tair10.txt` reports 80,197,636
+reads in and 65,981,082 out (17.73% duplicates), and the two bigWigs total
+80,197,634 and 65,981,082 cut sites. Peak pileup drops 5,290 to 811.
+
+If you need to compare a BOTANIC prediction against a ChromBPNet one
+quantitatively, this is the correction to apply first. BOTANIC's count head was
+fit to totals inflated about 18%, unevenly, since duplicate rate rises with
+local coverage.
+
+Two smaller things fall out of the same comparison. The tracks come from
+separate alignment runs - two reads apart in 80.2 million - leaving 98 singleton
+positions covered by one and not the other, which is `bowtie2 -k 1 --threads 8`
+choosing differently among equally scoring alignments and not worth chasing. And
+comparing coverage by `nBasesCovered` alone would have shown a difference of
+4 and hidden all 98, because the gains and losses nearly cancel; compare the
+covered masks, not their totals.
 
 The `cbp_*` files come from a different pipeline - ChromBPNet, at
 `/blue/jhernandezjarqui/andrewsg/plant-atac/results/chrombpnet/SRX8571616-tair10/`
