@@ -30,6 +30,43 @@ Nothing else needs changing. `App.tsx`, `datasets/types.ts`, `index.css` and
 `vite.config.ts` carry no project-specific content, which is what makes copying
 the directory a reasonable way to start.
 
+## Starting a project outside this repository
+
+The copy above assumes `apps/`, because the template reaches the packages
+through the workspace: `workspace:*` dependencies, Vite aliases, and tsconfig
+paths, all pointing at `../../packages`. Lifted out of the repository, all
+three break.
+
+For a separate repository, take the packages as tarballs instead. `dist` is
+gitignored and there is no `prepare` script, so installing from GitHub gives a
+package with no build output; `pnpm pack` runs `prepack`, which builds the
+chain:
+
+```sh
+# in this repository
+mkdir -p ~/tarballs
+for p in @weng-lab/genomebrowser @weng-lab/genomebrowser-tracks @weng-lab/genomic-reader; do
+  pnpm --filter "$p" pack --pack-destination ~/tarballs
+done
+```
+
+Then copy the template out and make three changes:
+
+1. **`package.json`** - point the three `@weng-lab` packages at
+   `file:../tarballs/<name>.tgz`, and replace every `catalog:` version with a
+   real one. `catalog:` is a pnpm workspace feature and means nothing outside.
+2. **`vite.config.ts`** - delete the workspace aliases. The packages come from
+   `node_modules` now. Keep the `dedupe`, which is what stops a second React
+   copy throwing "Invalid hook call" from inside a track.
+3. **`tsconfig.json`** - delete the `paths` block, for the same reason.
+
+Then `npm install` and it runs. Verified: the result builds and renders gene
+models with a working dataset picker, outside the workspace entirely.
+
+The cost is that the packages become a pinned snapshot - re-pack to pick up
+changes. A project you are co-developing with the packages belongs in `apps/`;
+one that consumes a stable version does not have to.
+
 ## What you get
 
 |                 |                                                                                |
