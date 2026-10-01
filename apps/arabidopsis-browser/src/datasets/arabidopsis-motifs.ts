@@ -146,18 +146,31 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
 ];
 
 /**
- * What the models predict, what was actually measured, and how many scored
+ * What each model predicts, what it was measured against, and how many scored
  * windows back each base.
  *
- * The predicted and observed tracks are directly comparable: the observed one
- * is the +4/-4 unstranded signal ChromBPNet was trained against, not the
- * +4/-5 CPM-normalised insertion signal that also exists in that pipeline and
- * would line up subtly wrong. Verified by comparing the deployed file against
- * the pipeline's own chrombpnet_signal output - identical min, max and mean.
+ * **Read each prediction against its own observed track, not the other one.**
+ * The two observed tracks are the same ATAC library processed differently -
+ * Pearson r 0.989 over a sample window, but not equal: BOTANIC trained on raw
+ * insertion counts from its shard, ChromBPNet on the +4/-4 shifted unstranded
+ * signal, and totals differ by around a sixth. They are deliberately adjacent
+ * so the pairing is visible rather than implied.
  *
- * The prediction is bias-corrected, so it is what the model believes the
- * sequence implies, with Tn5 preference removed. It will not track the
- * observed signal base for base at that level of detail, and should not.
+ * Neither observed track is the +4/-5 CPM-normalised insertion signal that also
+ * exists in the ChromBPNet pipeline, which would line up subtly wrong; the one
+ * here was checked against the pipeline's own chrombpnet_signal output and has
+ * identical min, max and mean.
+ *
+ * ChromBPNet's prediction is bias-corrected, so it is what the model believes
+ * the sequence implies with Tn5 preference removed. It will not track observed
+ * signal base for base at that level of detail, and should not.
+ *
+ * BOTANIC's prediction covers all 88,249 windows, train and val included, so
+ * most of what you see it has seen. Chromosome 4 is the held-out test split and
+ * the only honest place to judge it: predicted against observed log1p counts
+ * there is Pearson r 0.750 on peaks and 0.657 on background, against 0.914 on
+ * training peaks. Those three numbers are recomputed from the window bigBed
+ * below rather than quoted.
  *
  * `coverage` is worth leaving on: it is the difference between "the model
  * assigned this base no importance" and "no window scored this base at all",
@@ -167,6 +180,20 @@ export const DYNSEQ_TRACKS: DynseqTrack[] = [
  */
 export const SIGNAL_TRACKS: SignalTrack[] = [
   {
+    id: "botanic-pred",
+    title: "BOTANIC predicted ATAC signal",
+    url: `${MOTIFS}/botanic1s_atac_predicted_signal.bw`,
+    color: "#1f6fb4",
+    height: 60,
+  },
+  {
+    id: "botanic-obs",
+    title: "BOTANIC observed ATAC - raw insertion counts, what it was trained against",
+    url: `${MOTIFS}/botanic1s_atac_observed_signal.bw`,
+    color: "#4a4a4a",
+    height: 60,
+  },
+  {
     id: "cbp-pred-nobias",
     title: "ChromBPNet predicted signal, bias-corrected (SRX8571616)",
     url: `${MOTIFS}/cbp_pred_nobias.bw`,
@@ -175,7 +202,7 @@ export const SIGNAL_TRACKS: SignalTrack[] = [
   },
   {
     id: "atac-srx8571616",
-    title: "ATAC siliques (SRX8571616) - observed, and what the prediction above is predicting",
+    title: "ChromBPNet observed ATAC (SRX8571616) - +4/-4 unstranded, what it was trained against",
     url: `${BASE}/atac-SRX8571616.bw`,
     color: "#6d7f1f",
     height: 60,
@@ -252,6 +279,15 @@ export const BIGBED_TRACKS: BigBedTrack[] = [
     display: "squish",
     color: "#a8432a",
     height: 46,
+  },
+  {
+    id: "botanic-window-counts",
+    title: "BOTANIC per-window predicted vs observed log1p counts (score = 100 x predicted)",
+    url: `${MOTIFS}/botanic1s_atac_window_counts.bb`,
+    bedSchema: "bed6",
+    display: "dense",
+    color: "#1f6fb4",
+    height: 22,
   },
   {
     id: "scored-windows",

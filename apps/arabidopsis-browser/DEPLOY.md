@@ -272,18 +272,20 @@ rendered by `src/datasets/arabidopsis-motifs.ts`. Source and full method are in
 `PROVENANCE.txt` beside the data, and in the README of the pipeline output at
 `/blue/jhernandezjarqui/gary.klajer/motif_discovery/bigwig/` on HiPerGator.
 
-| File                                          | Contents                                                |
-| --------------------------------------------- | ------------------------------------------------------- |
-| `grad_{count,profile,combined}_contrib.bw`    | attribution at the reference base - the dynseq tracks   |
-| `grad_*_hyp_{A,C,G,T}.bw`                     | per-base values for all four bases, for logos           |
-| `coverage.bw`                                 | scored windows covering each base                       |
-| `finemo_{count,combined}_hits.bb`             | FiNeMo hits, all of them                                |
-| `finemo_{count,combined}_hits_sim0.9.bb`      | the same filtered to `hit_similarity >= 0.9`            |
-| `modisco_{count,profile,combined}_seqlets.bb` | TF-MoDISco seqlets                                      |
-| `windows.bb`                                  | the scored windows, named `split:peaks\|background:row` |
-| `discovered_patterns.meme`                    | every pattern with its family label                     |
-| `cbp_pred_nobias.bw`                          | ChromBPNet predicted signal, bias-corrected             |
-| `cbp_{counts,profile}_contrib.bw`             | ChromBPNet DeepSHAP attribution, bias-corrected         |
+| File                                            | Contents                                                |
+| ----------------------------------------------- | ------------------------------------------------------- |
+| `grad_{count,profile,combined}_contrib.bw`      | attribution at the reference base - the dynseq tracks   |
+| `grad_*_hyp_{A,C,G,T}.bw`                       | per-base values for all four bases, for logos           |
+| `coverage.bw`                                   | scored windows covering each base                       |
+| `finemo_{count,combined}_hits.bb`               | FiNeMo hits, all of them                                |
+| `finemo_{count,combined}_hits_sim0.9.bb`        | the same filtered to `hit_similarity >= 0.9`            |
+| `modisco_{count,profile,combined}_seqlets.bb`   | TF-MoDISco seqlets                                      |
+| `windows.bb`                                    | the scored windows, named `split:peaks\|background:row` |
+| `discovered_patterns.meme`                      | every pattern with its family label                     |
+| `cbp_pred_nobias.bw`                            | ChromBPNet predicted signal, bias-corrected             |
+| `cbp_{counts,profile}_contrib.bw`               | ChromBPNet DeepSHAP attribution, bias-corrected         |
+| `botanic1s_atac_{predicted,observed}_signal.bw` | BOTANIC predicted and observed ATAC signal              |
+| `botanic1s_atac_window_counts.bb`               | per-window predicted vs observed log1p counts           |
 
 Three things about this data are easy to get wrong:
 
@@ -298,6 +300,22 @@ Three things about this data are easy to get wrong:
 - **Only the count track's sign means "more or fewer reads".** `profile` and
   `combined` describe redistribution within the window, so their signs say
   where signal moves, not whether there is more of it.
+
+The `botanic1s_*` files arrived already TAIR-named from
+`/blue/jhernandezjarqui/gary.klajer/browser_export/` and needed no conversion -
+contig names and lengths were checked against the assembly rather than taken on
+trust, and `basesCovered` matches the other BOTANIC files exactly, so they cover
+the same 88,249 windows. Two independent checks were run before uploading:
+`log1p` of the summed per-base signal reproduces the bigBed's `pred_count` and
+`obs_count` to 5e-06 across 60 non-overlapping windows, and the test-split
+correlations recompute to 0.750 on peaks and 0.657 on background, matching the
+README.
+
+Note there are now **two observed ATAC tracks** and they are not the same file.
+BOTANIC trained on raw insertion counts from its own shard; ChromBPNet on the
++4/-4 shifted unstranded signal. Pearson r between them is 0.989 over a sample
+window but totals differ by about a sixth, so each prediction belongs with its
+own observed track.
 
 The `cbp_*` files come from a different pipeline - ChromBPNet, at
 `/blue/jhernandezjarqui/andrewsg/plant-atac/results/chrombpnet/SRX8571616-tair10/`
