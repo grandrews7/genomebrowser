@@ -22,6 +22,10 @@ const workspaceAliases = [
     replacement: source("../../packages/tracks/src/dynseq/index.ts"),
   },
   {
+    find: "@weng-lab/genomebrowser-tracks/bigbed",
+    replacement: source("../../packages/tracks/src/bigbed/index.ts"),
+  },
+  {
     find: "@weng-lab/genomebrowser-tracks/bigwig",
     replacement: source("../../packages/tracks/src/bigwig/index.ts"),
   },
