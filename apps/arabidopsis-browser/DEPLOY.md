@@ -53,7 +53,11 @@ is what makes those free. Measured across a dataset switch, 249 requests
 returned 0 bytes from the network.
 
 **A file is therefore cached for a year, and replacing one in place will not
-reach anyone who has already loaded it.** Publish changed data under a new
+reach anyone who has already loaded it.** This is not only about browsers:
+Google's edge caches public objects too, and it cannot be purged. Replacing
+`PROVENANCE.txt` in place proved it - the origin served the new text while the
+canonical URL kept returning the old one, so the fix was to publish under a new
+name and delete the old object. Publish changed data under a new
 name and point the dataset at it, rather than overwriting. To reset the header
 on everything:
 
@@ -269,8 +273,9 @@ are `Chr1`..`Chr5` rather than RefSeq accessions.
 `gs://living-models-browser-data/arabidopsis/motif-discovery/` holds gradient
 attributions and discovered motifs for the BOTANIC fine-tuned ATAC model,
 rendered by `src/datasets/arabidopsis-motifs.ts`. Source and full method are in
-`PROVENANCE.txt` beside the data, and in the README of the pipeline output at
-`/blue/jhernandezjarqui/gary.klajer/motif_discovery/bigwig/` on HiPerGator.
+`PROVENANCE-v2.txt` beside the data, and in the README of the motif-discovery
+pipeline output on HiPerGator. That is a colleague's personal directory, so the
+path is not recorded here; ask the Living Models team.
 
 | File                                          | Contents                                                |
 | --------------------------------------------- | ------------------------------------------------------- |
@@ -305,7 +310,7 @@ The `cbp_*` files come from a different pipeline - ChromBPNet, at
 - on the same ATAC sample and the same 30,965 MACS3 peaks, so the two models'
   attributions are comparable region for region. Three things about them:
 
-- **They carry organelles, unlike Gary's files.** `NC_000932.1` is ChrC at
+- **They carry organelles, unlike the motif-discovery files.** `NC_000932.1` is ChrC at
   154,478 bp and matches TAIR10 exactly; `NC_037304.1` is 367,808 against
   TAIR10's `ChrM` at 366,924 and is dropped rather than renamed. Both turned out
   to have zero coverage here, so the rebuilt files are the five nuclear
