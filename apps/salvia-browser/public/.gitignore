@@ -1,0 +1,6 @@
+# Local data files only. Genomic sources are large and belong on a host that
+# supports HTTP range requests, not in the repository. Anything dropped here is
+# served at the site root, so "/reads.bam" resolves to "public/reads.bam" and
+# sidesteps CORS while developing.
+*
+!.gitignore
